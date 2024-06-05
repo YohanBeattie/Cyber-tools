@@ -18,10 +18,13 @@ def replacer(letter, char, word, start):
 
 def main():
     args = parse()
+    ####################################################################
+    #Insert a sample of words in the above lists
     words1 = ['HMP', 'HeadMind', 'HEADMIND', 'headmind', 'HEADMIND', 'Headmind']  
     words2 = ['']
     date = ['2020', '2021', '2022', '2023', '2024', '']
     spe_char = ['$', '!', '?', '%', '&', '=', '#', '_', '']
+    ######################################################################
     passwd_little = []
     print('Launching permutations')
     for element in list(itertools.permutations(spe_char, 2)):
