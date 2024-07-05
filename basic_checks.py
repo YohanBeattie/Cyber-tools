@@ -75,6 +75,14 @@ def run_sslcompare(domains):
         print(f"---------Running sslcompare on {shlex.quote(domain)}---------")
         print(run_cmd(f'sslcompare {shlex.quote(domain)}').stdout)
 
+def run_sslscan(domains):
+    '''Running sslscan on all domains'''
+    for domain in domains:
+        print(f"---------Running sslscan on {domain}---------")
+        output = run_cmd(f'sslscan {shlex.quote(domain)}').stdout
+        if output:
+            print(output)
+
 def run_headerexposer(domains):
     '''Running header exposer on all domains'''
     for domain in domains:
@@ -164,6 +172,9 @@ def main():
 
     #Running sslcompare
     run_sslcompare(domains)
+    
+    #run sslscan
+    run_sslscan(domains)
     
     #Checking allowed methods
     check_http_methods(domains)
