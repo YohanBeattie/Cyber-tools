@@ -20,8 +20,8 @@ def main():
     args = parse()
     ####################################################################
     #Insert a sample of words in the above lists
-    words1 = ['Total', 'TOTAL', 'total','T']
-    words2 = [ 'Energies', 'energies','']#'Paribas', 'p', 'P', 'paribas', '']
+    words1 = ['mon', 'ma','']
+    words2 = [ 'entreprise', 'company','']
     date = ['2019', '2020', '2021', '2022', '2023', '2024', '']
     spe_char = ['$', '!', '&', '=', '#', '_', '$', '']
     ######################################################################
