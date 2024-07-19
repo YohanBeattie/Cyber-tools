@@ -130,7 +130,7 @@ def run_nmaps(ips):
         print("All nmaps have ended")
 
 def checkIP(IP):
-    '''This function checks we are doing the test from the lab'''
+    '''This function checks we are doing the test from the wanted source'''
     if not IP.stdout:
         print('Please be sure you are connected (the proper use of the Lab IP could not be checked)')
         exit(1)
