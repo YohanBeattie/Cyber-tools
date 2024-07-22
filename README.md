@@ -1,15 +1,15 @@
 # Cyber-tools
 Cybersecurity tools
 
+## Table des matières
+
+- 🪧 [About](#about)
+- 🚀 [Installation](#installation)
+- 🛠️ [Utilisation](#utilisation)
+
 ## About
 
 This project is made to help pentesters or developer that wish to assess there security level. 
-
-## Table des matières
-
-- 🪧 [À propos](#about)
-- 🚀 [Installation](#installation)
-- 🛠️ [Utilisation](#utilisation)
 
 ## Installation 
 ```
@@ -17,7 +17,6 @@ python3 -m pip install -r requirements.txt
 ```
 
 ## Utilisation
-
 ### Basic checks
 
 Basic-checks performs a few tests on the scope given such as checking the WAF, the SSL/TLS configuration and also performs a nmap scan. Before you run it, be sure to modify you IP (l.137) or you can also use the --force option to bypass that check. You can then run :
