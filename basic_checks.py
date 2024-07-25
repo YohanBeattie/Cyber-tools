@@ -29,11 +29,13 @@ def run_cmd(cmd, stdout=None, stderr=None):
     return subprocess.run(cmd.split(' '), encoding='utf-8', stdout=stdout, stderr=stderr)
 
 def check_http_methods(domains):
+    ''' Checks http methods with nmap (not great)'''
     for domain in domains:
         print(f'Checking the autorized methods on {domain}')
         run_cmd(f'nmap --script http-methods {domain}')
 
 def check_http_redirect(ip):
+    ''' Checks if the http port redirects to https'''
     print(f"Checking if http request on {ip} redirects to https")
     run_cmd(f'curl http://{ip}:80')
 
