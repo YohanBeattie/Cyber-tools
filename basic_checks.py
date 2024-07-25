@@ -97,18 +97,20 @@ def run_nmap(ip, passwd):
     #TO ADD
     # SCAN UDP sur top ports UDP (avec --max-parallelism)
     # SCAN on sX sF ?
+    # TO REMOVE : the use of password as an argument :-/
     nm = nmap.PortScanner()
     print(f"--------Scanning {format(ip)} with nmap--------")
-    nm.scan(shlex.quote(format(ip)), arguments='-p- -T4 -Pn')
+    #Parameter oX output a XML file for msf import
+    nm.scan(shlex.quote(format(ip)), arguments='-p- -T4 -Pn -oX')
     ports = []
     for port in nm[format(ip)]['tcp'].keys():
         if nm[format(ip)]['tcp'][port]["state"] == 'open':
             ports.append(port)
     print(f'Some open ports were found : {ports} (no opened port could mean we\'ve been blacklisted by the WAF)')
     print(f"--------Scanning {format(ip)} on opened ports with nmap--------")
-    mycmd = f'echo "{passwd}" | sudo -S nmap {shlex.quote(format(ip))} -p{",".join([str(port) for port in ports])} -T3 -O -sV'
+    mycmd = f'sudo -S nmap {shlex.quote(format(ip))} -p{",".join([str(port) for port in ports])} -T3 -O -sV -oX'
     subprocess.run(mycmd, encoding='utf-8', shell=True)
-    #nm.scan(shlex.quote(format(ip)), arguments=f'-p{",".join([str(port) for port in ports])} -T3 -O -sV', sudo=True)
+    #nm.scan(shlex.quote(format(ip)), arguments=f'-p{",".join([str(port) for port in ports])} -T3 -O -sV -oX', sudo=True)
     print ('\tIP \t Port \tVersion  \t\tProduct \t\tExtra Info')
     for port in nm[format(ip)]['tcp'].keys():
         print ('%s\t %s\t %s\t %s\t %s\t' % (format(ip), port, nm[format(ip)]['tcp'][port]['version'], nm[format(ip)]['tcp'][port]['product'], nm[format(ip)]['tcp'][port]['extrainfo']))
