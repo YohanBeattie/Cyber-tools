@@ -73,6 +73,7 @@ target = args.target
 #username = args.username
 wordlist = args.wordlist
 
-brute_force(target, wordlist)
 check_anonymous_login(target)
+brute_force(target, wordlist)
+
 print("\n[-] Brute force finished. \n")
