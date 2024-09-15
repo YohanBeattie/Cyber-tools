@@ -19,7 +19,8 @@ python3 -m pip install -r requirements.txt
 ## Utilisation
 ### Basic checks
 
-Basic-checks performs a few tests on the scope given such as checking the WAF, the SSL/TLS configuration and also performs a nmap scan. Before you run it, be sure to modify you IP (l.137) or you can also use the --force option to bypass that check. You can then run :
+Basic-checks performs a few tests on the scope given such as checking the WAF, the SSL/TLS configuration and also performs a nmap scan and starts some fuzzing. 
+This scan should be made from the IP given to your target : before you run it, be sure to insert your IP (l.137) or you can also use the --force option to bypass that check. You can then run :
  ```
 echo 'exemple.com' > scope.txt
 echo '127.0.0.1' >> scope.txt
