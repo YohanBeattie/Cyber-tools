@@ -10,17 +10,17 @@ import subprocess
 import shlex
 import nmap
 import threading
-from getpass import getpass
 
 def parse():
     '''This function defines the argument of our script'''
     parser = argparse.ArgumentParser(
         prog="Basic checks for web pentests",
-        description="Those checks include nmap, sslcompare, headerexposer, ...",
+        description="Those checks include nmap, sslcompare, headerexposer,feroxbuster,...",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument("-f", "--scope", help="Scope file (IP range, IP addresse, domains)", required=True)
     parser.add_argument("--force", action="store_true", help="Force script to execute (even without Lab-IP)", required=False)
-    parser.add_argument("-w", "--wordlist", help="Define a world list for gobuster tests", required=False, default="/usr/share/wordlists/seclists/Discovery/Web-Content/raft-medium-files.txt")
+    parser.add_argument("--ferox-args", help="Argument provided to the fuzzing part. See 'feroxbuster -h' for felp", required=False, default="--smart --burp -C 404 --thorough -r -w /usr/share/wordlists/seclists/Discovery/Web-Content/raft-medium-files.txt")
     #parser.add_argument("-o", "--output", help="Output file", required=False)
     return parser.parse_args()
 
@@ -95,7 +95,7 @@ def run_headerexposer(domains):
         if output:
             print(output)
 
-def run_nmap(ip, passwd, scope):
+def run_nmap(ip, scope):
     '''Running a first nmap on all port and then a more detailes and discrete one on the open ports'''
     #TO ADD
     # SCAN UDP sur top ports UDP (avec --max-parallelism)
@@ -104,7 +104,8 @@ def run_nmap(ip, passwd, scope):
     nm = nmap.PortScanner()
     print(f"--------Scanning {format(ip)} with nmap--------")
     #Parameter oX output a XML file for msf import
-    nm.scan(shlex.quote(format(ip)), arguments=f'-p- -T4 -Pn -oA {scope}')
+    output_file = scope.split('.')[0] if '.' in scope else scope
+    nm.scan(shlex.quote(format(ip)), arguments=f'-p- -T4 -Pn -sV -oN nmap_{ip}')
     ports = []
     for port in nm[format(ip)]['tcp'].keys():
         if nm[format(ip)]['tcp'][port]["state"] == 'open':
@@ -122,9 +123,8 @@ def run_nmap(ip, passwd, scope):
 def run_nmaps(ips, scope):
     '''Running nmap on all ips concurently'''
     threads = list()
-    passwd = getpass(prompt='Please enter password (OS nmap requires root privilege) (only 1 try) : ')
     for ip in ips:
-        x = threading.Thread(target=run_nmap, args=(ip,passwd, scope))
+        x = threading.Thread(target=run_nmap, args=(ip, scope))
         threads.append(x)
         x.start()
         break
@@ -149,19 +149,19 @@ def checkWAF(domains, IPs):
         run_cmd(f'wafw00f -v -a http://{shlex.quote(format(ip))}')
         run_cmd(f'wafw00f -v -a https://{shlex.quote(format(ip))}')
 
-def run_gobuster(domain, file):
-    '''Run gobuster on a domain'''
-    print(f"--------Fuzzing on {format(domain)} with gobuster--------")
-    cmd = f'gobuster dir -u http://{domain} -w {file}'
-    print(f'Command :{cmd}')
-    run_cmd(cmd)
+
+def run_feroxbuster(domain, args_ferox):
+    '''Run feroxbuster on a domain'''
+    print(f"--------Fuzzing on {format(domain)} with feroxbuster--------")
+    cmd=f'feroxbuster -u http://{domain} {args_ferox} -o ferobuster_{domain}.log'
+    run_cmd(cmd1)
 
 
-def run_gobusters(domains, file):
+def run_feroxbusters(domains, args_ferox):
     '''This function run parallelized fuzzing on the domains'''
     threads = list()
     for domain in domains:
-        x = threading.Thread(target=run_gobuster, args=(domain,file))
+        x = threading.Thread(target=run_feroxbuster, args=(domain,args_ferox))
         threads.append(x)
         x.start()
         break
@@ -205,8 +205,8 @@ def main():
     #Running nmaps
     run_nmaps(ips, args.scope)
 
-    #Running gobuster
-    run_gobusters(domains, args.wordlist)
+    #Running feroxbuster
+    run_feroxbusters(domains, args.ferox_args)
 
     print('DONE')
 
