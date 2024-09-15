@@ -39,7 +39,7 @@ python3 home_passwd_gen.py -o mycompany_pwd.dict
 
 ### Open IP in browser
 
-A simple script opening all ips in browser on http and https page. Pages are open by 20 :
+A simple script opening all ips in browser on http and https page. The file can contain either IPs or IP:Port. Pages are open by group of 20 :
 ```
 python3 ./open_ip_in_browser.py -f ips.txt
 ```
