@@ -20,6 +20,7 @@ def parse():
     )
     parser.add_argument("-f", "--scope", help="Scope file (IP range, IP addresse, domains)", required=True)
     parser.add_argument("--force", action="store_true", help="Force script to execute (even without Lab-IP)", required=False)
+    parser.add_argument("-w", "--wordlist", help="Define a world list for gobuster tests", required=False, default="/usr/share/wordlists/seclists/Discovery/Web-Content/raft-medium-files.txt")
     #parser.add_argument("-o", "--output", help="Output file", required=False)
     return parser.parse_args()
 
@@ -34,10 +35,10 @@ def check_http_methods(domains):
         print(f'Checking the autorized methods on {domain}')
         run_cmd(f'nmap --script http-methods {domain}')
 
-def check_http_redirect(ip):
+def check_http_redirect(ip, port):
     ''' Checks if the http port redirects to https'''
     print(f"Checking if http request on {ip} redirects to https")
-    run_cmd(f'curl http://{ip}:80')
+    run_cmd(f'curl http://{ip}:{port}')
 
 def def_ips_domain(file):
     '''This function defines our scope based on the input file'''
@@ -94,7 +95,7 @@ def run_headerexposer(domains):
         if output:
             print(output)
 
-def run_nmap(ip, passwd):
+def run_nmap(ip, passwd, scope):
     '''Running a first nmap on all port and then a more detailes and discrete one on the open ports'''
     #TO ADD
     # SCAN UDP sur top ports UDP (avec --max-parallelism)
@@ -103,29 +104,27 @@ def run_nmap(ip, passwd):
     nm = nmap.PortScanner()
     print(f"--------Scanning {format(ip)} with nmap--------")
     #Parameter oX output a XML file for msf import
-    nm.scan(shlex.quote(format(ip)), arguments='-p- -T4 -Pn -oX')
+    nm.scan(shlex.quote(format(ip)), arguments=f'-p- -T4 -Pn -oA {scope}')
     ports = []
     for port in nm[format(ip)]['tcp'].keys():
         if nm[format(ip)]['tcp'][port]["state"] == 'open':
             ports.append(port)
     print(f'Some open ports were found : {ports} (no opened port could mean we\'ve been blacklisted by the WAF)')
-    print(f"--------Scanning {format(ip)} on opened ports with nmap--------")
-    mycmd = f'sudo -S nmap {shlex.quote(format(ip))} -p{",".join([str(port) for port in ports])} -T3 -O -sV -oX'
-    subprocess.run(mycmd, encoding='utf-8', shell=True)
-    #nm.scan(shlex.quote(format(ip)), arguments=f'-p{",".join([str(port) for port in ports])} -T3 -O -sV -oX', sudo=True)
     print ('\tIP \t Port \tVersion  \t\tProduct \t\tExtra Info')
     for port in nm[format(ip)]['tcp'].keys():
         print ('%s\t %s\t %s\t %s\t %s\t' % (format(ip), port, nm[format(ip)]['tcp'][port]['version'], nm[format(ip)]['tcp'][port]['product'], nm[format(ip)]['tcp'][port]['extrainfo']))
     print()
     if 80 in ports:
-        check_http_redirect(ip)
+        check_http_redirect(ip, 80)
+    if 8080 in ports:
+        check_http_redirect(ip, 8080)
 
-def run_nmaps(ips):
+def run_nmaps(ips, scope):
     '''Running nmap on all ips concurently'''
     threads = list()
     passwd = getpass(prompt='Please enter password (OS nmap requires root privilege) (only 1 try) : ')
     for ip in ips:
-        x = threading.Thread(target=run_nmap, args=(ip,passwd))
+        x = threading.Thread(target=run_nmap, args=(ip,passwd, scope))
         threads.append(x)
         x.start()
         break
@@ -149,6 +148,26 @@ def checkWAF(domains, IPs):
     for ip in IPs:
         run_cmd(f'wafw00f -v -a http://{shlex.quote(format(ip))}')
         run_cmd(f'wafw00f -v -a https://{shlex.quote(format(ip))}')
+
+def run_gobuster(domain, file):
+    '''Run gobuster on a domain'''
+    print(f"--------Fuzzing on {format(domain)} with gobuster--------")
+    cmd = f'gobuster dir -u http://{domain} -w {file}'
+    print(f'Command :{cmd}')
+    run_cmd(cmd)
+
+
+def run_gobusters(domains, file):
+    '''This function run parallelized fuzzing on the domains'''
+    threads = list()
+    for domain in domains:
+        x = threading.Thread(target=run_gobuster, args=(domain,file))
+        threads.append(x)
+        x.start()
+        break
+    for _,thread in enumerate(threads):
+        thread.join()
+        print("All fuzzing have ended")
 
 def main():
     '''Main function running all test one after the others'''
@@ -184,9 +203,13 @@ def main():
     check_http_methods(domains)
 
     #Running nmaps
-    run_nmaps(ips)
+    run_nmaps(ips, args.scope)
+
+    #Running gobuster
+    run_gobusters(domains, args.wordlist)
 
     print('DONE')
 
 if __name__=='__main__':
     main()
+
