@@ -154,7 +154,7 @@ def run_feroxbuster(domain, args_ferox):
     '''Run feroxbuster on a domain'''
     print(f"--------Fuzzing on {format(domain)} with feroxbuster--------")
     cmd=f'feroxbuster -u http://{domain} {args_ferox} -o ferobuster_{domain}.log'
-    run_cmd(cmd1)
+    run_cmd(cmd)
 
 
 def run_feroxbusters(domains, args_ferox):
