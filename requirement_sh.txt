@@ -1,4 +1,4 @@
 feroxbuster
 nmap
-nslookup
+dnsutils
 wafw00f
