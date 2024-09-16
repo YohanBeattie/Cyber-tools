@@ -1,7 +1,7 @@
 #!/bin/python3
 # This program is supposed to automatize basic test for web interface
 # @authors ybeattie
-# @version 1.0
+# @version 2.0
 
 import argparse
 import ipaddress
@@ -212,4 +212,3 @@ def main():
 
 if __name__=='__main__':
     main()
-
