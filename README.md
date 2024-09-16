@@ -13,7 +13,9 @@ This project is made to help pentesters or developer that wish to assess there s
 
 ## Installation 
 ```
-python3 -m pip install -r requirements.txt
+sudo apt install $(cat requirement_sh.txt)
+python3 -m pip install -r requirement_py.txt
+
 ```
 
 ## Utilisation
