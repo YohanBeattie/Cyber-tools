@@ -1,0 +1,4 @@
+feroxbuster
+nmap
+nslookup
+wafw00f
