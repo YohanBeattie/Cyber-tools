@@ -15,7 +15,6 @@ This project is made to help pentesters or developer that wish to assess there s
 ```
 sudo apt install $(cat requirement_sh.txt)
 python3 -m pip install -r requirement_py.txt
-
 ```
 
 ## Utilisation
@@ -31,7 +30,7 @@ python3 basic_checks.py -f scope.txt
 
 ### Generate Cookie with CSRF
 
-This program must be adapted to you case by probably getting your hands dirty but when well configured, this script loads the connexion page and then performs a legit connexion using the credentials provided and the csrf token gathered
+This program is usefull to gather a list of valid cookie on a login form protected wiht single-use CSRF token. This script must be adapted to you case by probably getting your hands dirty.
 
 ### Home Password Generator
 
