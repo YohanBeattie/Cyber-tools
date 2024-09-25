@@ -1,5 +1,5 @@
 #!/bin/python3
-# This program automatize basic test for web interface
+# This program creates a custom password dictionnary 
 # @authors ybeattie
 
 import itertools
