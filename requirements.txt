@@ -1,5 +1,4 @@
 nslookup
-python-nmap
 headerexposer
 poetry
 sslcompare
