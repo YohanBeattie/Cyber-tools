@@ -10,6 +10,8 @@ import subprocess
 import shlex
 import nmap
 import threading
+import xml.etree.ElementTree as ET
+import os 
 
 def parse():
     '''This function defines the argument of our script'''
@@ -95,42 +97,39 @@ def run_headerexposer(domains):
         if output:
             print(output)
 
-def run_nmap(ip, scope):
-    '''Running a first nmap on all port and then a more detailes and discrete one on the open ports'''
-    #TO ADD
-    # SCAN UDP sur top ports UDP (avec --max-parallelism)
-    # SCAN on sX sF ?
-    # TO REMOVE : the use of password as an argument :-/
-    nm = nmap.PortScanner()
-    print(f"--------Scanning {format(ip)} with nmap--------")
-    #Parameter oX output a XML file for msf import
-    output_file = scope.split('.')[0] if '.' in scope else scope
-    nm.scan(shlex.quote(format(ip)), arguments=f'-p- -T4 -Pn -sV -oN nmap_{ip}')
-    ports = []
-    for port in nm[format(ip)]['tcp'].keys():
-        if nm[format(ip)]['tcp'][port]["state"] == 'open':
-            ports.append(port)
-    print(f'Some open ports were found : {ports} (no opened port could mean we\'ve been blacklisted by the WAF)')
-    print ('\tIP \t Port \tVersion  \t\tProduct \t\tExtra Info')
-    for port in nm[format(ip)]['tcp'].keys():
-        print ('%s\t %s\t %s\t %s\t %s\t' % (format(ip), port, nm[format(ip)]['tcp'][port]['version'], nm[format(ip)]['tcp'][port]['product'], nm[format(ip)]['tcp'][port]['extrainfo']))
-    print()
-    if 80 in ports:
-        check_http_redirect(ip, 80)
-    if 8080 in ports:
-        check_http_redirect(ip, 8080)
-
-def run_nmaps(ips, scope):
+def run_nmaps(ips, scope, path):
     '''Running nmap on all ips concurently'''
     threads = list()
     for ip in ips:
-        x = threading.Thread(target=run_nmap, args=(ip, scope))
+        x = threading.Thread(target=run_nmap2, args=(ip, scope, path))
         threads.append(x)
         x.start()
         break
     for _,thread in enumerate(threads):
         thread.join()
         print("All nmaps have ended")
+
+def run_nmap2(ip, scope, path):
+    '''Running a first nmap on all port and then a more detailes and discrete one on the open ports'''
+    ip = shlex.quote(format(ip))    
+    output_file = f'{path}/nmap_{ip}.xml'
+    command = f'nmap -sV -p- -Pn -T4 {ip} -oX {output_file}'
+    
+    run_cmd(command)
+    root = ET.parse(output_file).getroot()
+
+    ports = []
+    for host in root.findall('host'):
+        for port in host.findall('ports/port'):
+            if port.find('state').get('state') == 'open':
+                ports.append(int(port.get('portid')))
+
+    if 80 in ports:
+        check_http_redirect(ip, 80)
+    if 8080 in ports:
+        check_http_redirect(ip, 8080)
+    if 8008 in ports:
+        check_http_redirect(ip, 8008)
 
 def checkIP(IP):
     '''This function checks we are doing the test from the wanted source'''
@@ -149,13 +148,11 @@ def checkWAF(domains, IPs):
         run_cmd(f'wafw00f -v -a http://{shlex.quote(format(ip))}')
         run_cmd(f'wafw00f -v -a https://{shlex.quote(format(ip))}')
 
-
-def run_feroxbuster(domain, args_ferox):
+def run_feroxbuster(domain, args_ferox, out_path):
     '''Run feroxbuster on a domain'''
     print(f"--------Fuzzing on {format(domain)} with feroxbuster--------")
-    cmd=f'feroxbuster -u http://{domain} {args_ferox} -o ferobuster_{domain}.log'
+    cmd=f'feroxbuster -u http://{shlex.quote(format(domain))} {shlex.quote(format(args_ferox))} -o {out_path}/ferobuster_{shlex.quote(format(domain))}.log'
     run_cmd(cmd)
-
 
 def run_feroxbusters(domains, args_ferox):
     '''This function run parallelized fuzzing on the domains'''
@@ -173,6 +170,9 @@ def main():
     '''Main function running all test one after the others'''
     args = parse()
     myIP = run_cmd('curl ifconfig.me', stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    folder_path = os.path.join(os.environ['HOME'], "Documents/Mission/out/basic_checks")
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
     if not args.force:
         checkIP(myIP)
     try :
@@ -180,7 +180,7 @@ def main():
             ips, domains = def_ips_domain(f)
             print(f'{str(len(ips))} IPs were found in file')
             print(f'{str(len(domains))} domain were found in file')
-            print('---------------Looking for WAF---------------')
+            print('---------,------Looking for WAF---------------')
             checkWAF(domains, ips)
             print("---------Running nslookup on domains---------")
             for domain in domains:
@@ -203,10 +203,10 @@ def main():
     check_http_methods(domains)
 
     #Running nmaps
-    run_nmaps(ips, args.scope)
+    run_nmaps(ips, args.scope, folder_path)
 
     #Running feroxbuster
-    run_feroxbusters(domains, args.ferox_args)
+    run_feroxbusters(domains, args.ferox_args, folder_path)
 
     print('DONE')
 
