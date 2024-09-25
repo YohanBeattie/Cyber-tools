@@ -25,7 +25,8 @@ def parse():
         help="Force script to execute (even without Lab-IP)")
     parser.add_argument("--ferox-args", required=False,
         help="Argument provided to the fuzzing part. See 'feroxbuster -h' for felp",
-        default="--smart --burp -C 404 --thorough -r -w /usr/share/wordlists/seclists/Discovery/Web-Content/raft-medium-files.txt")
+        default="--smart --burp -C 404 --thorough -r \
+            -w /usr/share/wordlists/seclists/Discovery/Web-Content/raft-medium-files.txt")
     #parser.add_argument("-o", "--output", help="Output file", required=False)
     return parser.parse_args()
 
@@ -39,12 +40,12 @@ def check_http_methods(domains):
     ''' Checks http methods with nmap (not great)'''
     for domain in domains:
         print(f'Checking the autorized methods on {domain}')
-        run_cmd(f'nmap --script http-methods {domain}')
+        run_cmd(f'nmap --script http-methods {shlex.quote(domain)}')
 
 def check_http_redirect(ip, port):
     ''' Checks if the http port redirects to https'''
     print(f"Checking if http request on {ip} redirects to https")
-    run_cmd(f'curl http://{ip}:{port}')
+    run_cmd(f'curl http://{shlex.quote(ip)}:{shlex.quote(port)}')
 
 def def_ips_domain(file):
     '''This function defines our scope based on the input file'''
