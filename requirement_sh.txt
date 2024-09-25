@@ -1,4 +1,0 @@
-feroxbuster
-nmap
-dnsutils
-wafw00f
