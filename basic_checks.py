@@ -20,7 +20,7 @@ def parse():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument("-f", "--scope", required=True,\
-        help="Scope file (IP range, IP addresse, domains)", required=True)
+        help="Scope file (IP range, IP addresse, domains)")
     parser.add_argument("--force", action="store_true", required=False,
         help="Force script to execute (even without Lab-IP)")
     parser.add_argument("--ferox-args", required=False,
