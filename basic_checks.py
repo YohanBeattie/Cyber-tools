@@ -1,35 +1,39 @@
 #!/bin/python3
-# This program is supposed to automatize basic test for web interface
+# This program automatize basic test for web interface
 # @authors ybeattie
 # @version 2.0
 
 import argparse
+import os
 import ipaddress
-from nslookup import Nslookup
 import subprocess
 import shlex
-import nmap
 import threading
 import xml.etree.ElementTree as ET
-import os 
+from nslookup import Nslookup
 
 def parse():
     '''This function defines the argument of our script'''
     parser = argparse.ArgumentParser(
         prog="Basic checks for web pentests",
-        description="Those checks include nmap, sslcompare, headerexposer,feroxbuster,...",
+        description="Those checks include nmap, ssl and header checks & fuzzing,...",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument("-f", "--scope", help="Scope file (IP range, IP addresse, domains)", required=True)
-    parser.add_argument("--force", action="store_true", help="Force script to execute (even without Lab-IP)", required=False)
-    parser.add_argument("--ferox-args", help="Argument provided to the fuzzing part. See 'feroxbuster -h' for felp", required=False, default="--smart --burp -C 404 --thorough -r -w /usr/share/wordlists/seclists/Discovery/Web-Content/raft-medium-files.txt")
+    parser.add_argument("-f", "--scope", required=True,\
+        help="Scope file (IP range, IP addresse, domains)", required=True)
+    parser.add_argument("--force", action="store_true", required=False,
+        help="Force script to execute (even without Lab-IP)")
+    parser.add_argument("--ferox-args", required=False,
+        help="Argument provided to the fuzzing part. See 'feroxbuster -h' for felp",
+        default="--smart --burp -C 404 --thorough -r -w /usr/share/wordlists/seclists/Discovery/Web-Content/raft-medium-files.txt")
     #parser.add_argument("-o", "--output", help="Output file", required=False)
     return parser.parse_args()
 
 def run_cmd(cmd, stdout=None, stderr=None):
     '''This is a special function for running bash cmd and printing or not de result'''
     print(f'Running {cmd}')
-    return subprocess.run(cmd.split(' '), encoding='utf-8', stdout=stdout, stderr=stderr)
+    return subprocess.run(cmd.split(' '), encoding='utf-8', \
+        stdout=stdout, stderr=stderr, check=False)
 
 def check_http_methods(domains):
     ''' Checks http methods with nmap (not great)'''
@@ -49,7 +53,7 @@ def def_ips_domain(file):
     for line in file.readlines():
         line = line.strip()
         try:
-            if ('-' in line or '/' in line) and not (':' in line):
+            if ('-' in line or '/' in line) and not ':' in line:
                 for ip in list(ipaddress.ip_network(line, False).hosts()):
                     if ip not in ips:
                         ips.append(ip)
@@ -97,11 +101,11 @@ def run_headerexposer(domains):
         if output:
             print(output)
 
-def run_nmaps(ips, scope, path):
+def run_nmaps(ips, path):
     '''Running nmap on all ips concurently'''
     threads = list()
     for ip in ips:
-        x = threading.Thread(target=run_nmap2, args=(ip, scope, path))
+        x = threading.Thread(target=run_nmap2, args=(ip, path))
         threads.append(x)
         x.start()
         break
@@ -109,12 +113,11 @@ def run_nmaps(ips, scope, path):
         thread.join()
         print("All nmaps have ended")
 
-def run_nmap2(ip, scope, path):
-    '''Running a first nmap on all port and then a more detailes and discrete one on the open ports'''
-    ip = shlex.quote(format(ip))    
+def run_nmap2(ip, path):
+    '''Running nmap and checking http redirection'''
+    ip = shlex.quote(format(ip))
     output_file = f'{path}/nmap_{ip}.xml'
     command = f'nmap -sV -p- -Pn -T4 {ip} -oX {output_file}'
-    
     run_cmd(command)
     root = ET.parse(output_file).getroot()
 
@@ -131,34 +134,36 @@ def run_nmap2(ip, scope, path):
     if 8008 in ports:
         check_http_redirect(ip, 8008)
 
-def checkIP(IP):
+def check_ip(ip):
     '''This function checks we are doing the test from the wanted source'''
-    if not IP.stdout:
-        print('Please be sure you are connected (the proper use of the Lab IP could not be checked)')
+    if not ip.stdout:
+        print('Please be sure you are connected (the use of the correct IP could not be checked)')
         exit(1)
-    if IP.stdout != '62.23.181.125':
+    if ip.stdout != '62.23.181.125':
         print('Please be sure to run your test from the Lab IP')
         exit(1)
 
-def checkWAF(domains, IPs):
+def check_waf(domains, ips):
     '''This function checks the WAF that is set up'''
     for domain in domains:
         run_cmd(f'wafw00f -v -a {shlex.quote(domain)}')
-    for ip in IPs:
+    for ip in ips:
         run_cmd(f'wafw00f -v -a http://{shlex.quote(format(ip))}')
         run_cmd(f'wafw00f -v -a https://{shlex.quote(format(ip))}')
 
 def run_feroxbuster(domain, args_ferox, out_path):
     '''Run feroxbuster on a domain'''
     print(f"--------Fuzzing on {format(domain)} with feroxbuster--------")
-    cmd=f'feroxbuster -u http://{shlex.quote(format(domain))} {shlex.quote(format(args_ferox))} -o {out_path}/ferobuster_{shlex.quote(format(domain))}.log'
+    args_ferox = shlex.quote(format(args_ferox))
+    domain = shlex.quote(format(domain))
+    cmd=f'feroxbuster -u http://{domain} {args_ferox} -o {out_path}/ferobuster_{domain}.log'
     run_cmd(cmd)
 
-def run_feroxbusters(domains, args_ferox):
+def run_feroxbusters(domains, args_ferox, path):
     '''This function run parallelized fuzzing on the domains'''
     threads = list()
     for domain in domains:
-        x = threading.Thread(target=run_feroxbuster, args=(domain,args_ferox))
+        x = threading.Thread(target=run_feroxbuster, args=(domain,args_ferox, path))
         threads.append(x)
         x.start()
         break
@@ -169,19 +174,19 @@ def run_feroxbusters(domains, args_ferox):
 def main():
     '''Main function running all test one after the others'''
     args = parse()
-    myIP = run_cmd('curl ifconfig.me', stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    my_ip = run_cmd('curl ifconfig.me', stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     folder_path = os.path.join(os.environ['HOME'], "Documents/Mission/out/basic_checks")
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
     if not args.force:
-        checkIP(myIP)
+        check_ip(my_ip)
     try :
         with open(args.scope, 'r', encoding="utf-8") as f:
             ips, domains = def_ips_domain(f)
             print(f'{str(len(ips))} IPs were found in file')
             print(f'{str(len(domains))} domain were found in file')
             print('---------,------Looking for WAF---------------')
-            checkWAF(domains, ips)
+            check_waf(domains, ips)
             print("---------Running nslookup on domains---------")
             for domain in domains:
                 ips += run_nslookup(domain)
@@ -195,15 +200,15 @@ def main():
 
     #Running sslcompare
     run_sslcompare(domains)
-    
+
     #run sslscan
     run_sslscan(domains)
-    
+
     #Checking allowed methods
     check_http_methods(domains)
 
     #Running nmaps
-    run_nmaps(ips, args.scope, folder_path)
+    run_nmaps(ips, folder_path)
 
     #Running feroxbuster
     run_feroxbusters(domains, args.ferox_args, folder_path)
