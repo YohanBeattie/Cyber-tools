@@ -32,7 +32,7 @@ python3 basic_checks.py -f scope.txt
 
 This program is usefull to gather a list of valid cookie on a login form protected wiht single-use CSRF token. This script must be adapted to you case by probably getting your hands dirty.
 
-### Home Password Generator
+### Homemade Password Generator
 
 This script is made to generate a specific bunch of password based on some password. This script must be adapted to the usecase. Please edit line 23 to 26 and then run :
 ```
