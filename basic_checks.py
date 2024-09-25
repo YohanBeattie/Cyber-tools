@@ -175,11 +175,11 @@ def run_feroxbusters(domains, args_ferox, path):
 def main():
     '''Main function running all test one after the others'''
     args = parse()
-    my_ip = run_cmd('curl ifconfig.me', stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     folder_path = os.path.join(os.environ['HOME'], "Documents/Mission/out/basic_checks")
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
     if not args.force:
+        my_ip = run_cmd('curl ifconfig.me', stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         check_ip(my_ip)
     try :
         with open(args.scope, 'r', encoding="utf-8") as f:
