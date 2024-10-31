@@ -25,7 +25,7 @@ This scan should be made from the IP given to your target : before you run it, b
  ```
 echo 'exemple.com' > scope.txt
 echo '127.0.0.1' >> scope.txt
-python3 basic_checks.py -f scope.txt
+./venv/bin/python basic_checks.py -f scope.txt
 ```
 
 ### Generate Cookie with CSRF
