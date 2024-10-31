@@ -25,8 +25,7 @@ def parse():
         help="Force script to execute (even without Lab-IP)")
     parser.add_argument("--ferox-args", required=False,
         help="Argument provided to the fuzzing part. See 'feroxbuster -h' for felp",
-        default="--smart --burp -C 404 --thorough -r \
-            -w /usr/share/wordlists/seclists/Discovery/Web-Content/raft-medium-files.txt")
+        default='--smart -C 404 --thorough -r -w /usr/share/wordlists/seclists/Discovery/Web-Content/raft-medium-files.txt')
     #parser.add_argument("-o", "--output", help="Output file", required=False)
     return parser.parse_args()
 
@@ -155,7 +154,8 @@ def check_waf(domains, ips):
 def run_feroxbuster(domain, args_ferox, out_path):
     '''Run feroxbuster on a domain'''
     print(f"--------Fuzzing on {format(domain)} with feroxbuster--------")
-    args_ferox = shlex.quote(format(args_ferox))
+    args_ferox = args_ferox
+    print(args_ferox)
     domain = shlex.quote(format(domain))
     cmd=f'feroxbuster -u http://{domain} {args_ferox} -o {out_path}/ferobuster_{domain}.log'
     run_cmd(cmd)
@@ -197,19 +197,19 @@ def main():
     print(domains)
 
     #Running headerexposer
-    run_headerexposer(domains)
+    #run_headerexposer(domains)
 
     #Running sslcompare
-    run_sslcompare(domains)
+    #run_sslcompare(domains)
 
     #run sslscan
-    run_sslscan(domains)
+    #run_sslscan(domains)
 
     #Checking allowed methods
-    check_http_methods(domains)
+    #check_http_methods(domains)
 
     #Running nmaps
-    run_nmaps(ips, folder_path)
+    #run_nmaps(ips, folder_path)
 
     #Running feroxbuster
     run_feroxbusters(domains, args.ferox_args, folder_path)
