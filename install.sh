@@ -1,5 +1,5 @@
 #!/bin/bash
-sudo apt install feroxbuster nmap wafw00f python3
+sudo apt install feroxbuster nmap wafw00f python3 python3-venv
 
 python3 -m venv venv
 source ./venv/bin/activate
