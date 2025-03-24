@@ -17,7 +17,7 @@ chmod +x install.sh
 ./install.sh
 source ./venv/bin/activate
 ```
-### Using other Linux than Kali
+### Using other UNIX OS than Kali
 
 If you are not using Kali Linux, feroxbuster will not be install by the script and you may need to install it manually : 
 ```
