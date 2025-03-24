@@ -15,6 +15,7 @@ This project is made to help pentesters or developer that wish to assess there s
 ```
 chmod +x install.sh
 ./install.sh
+source ./venv/bin/activate
 ```
 
 ## Utilisation
