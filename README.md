@@ -5,7 +5,8 @@ Cybersecurity tools
 
 - 🪧 [About](#about)
 - 🚀 [Installation](#installation)
-- 🛠️ [Utilisation](#utilisation)
+- 📖 [Utilisation](#utilisation)
+- 🛠️ [Troubleshooting](#troubleshooting)
 
 ## About
 
@@ -54,3 +55,19 @@ A simple script opening all ips in browser on http and https page. The file can 
 ```
 python3 ./open_ip_in_browser.py -f ips.txt
 ```
+
+## Troubleshooting
+
+Most of those scripts were tested on Kali Linux and Debian. Any other OS might cause some distress. Feel free to create an issue if so.
+
+### Issues with feroxbuster 
+While being easy to install on Kali (apt install feroxbuster), on other OS you need to run the following lines :
+```
+curl -sLO https://github.com/epi052/feroxbuster/releases/latest/download/feroxbuster_amd64.deb.zip
+unzip feroxbuster_amd64.deb.zip
+sudo apt install ./feroxbuster_*_amd64.deb
+```
+Moreover you need to have clone the Seclists repo in /usr/share/wordlists (be sure to check the typo SecLists and Seclists) before being able to run the command.
+
+
+
