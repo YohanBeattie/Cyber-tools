@@ -26,7 +26,7 @@ def parse():
     parser.add_argument("--ferox-args", required=False,
         help="Argument provided to the fuzzing part. See 'feroxbuster -h' for felp",
         default='--smart -C 404 --thorough -r -w /usr/share/wordlists/seclists/Discovery/Web-Content/raft-medium-files.txt')
-    #parser.add_argument("-o", "--output", help="Output file", required=False)
+    parser.add_argument("-o", "--output", help="Output logs location", default="Documents/Mission/out/basic_checks", required=False)
     return parser.parse_args()
 
 def run_cmd(cmd, stdout=None, stderr=None):
@@ -175,7 +175,7 @@ def run_feroxbusters(domains, args_ferox, path):
 def main():
     '''Main function running all test one after the others'''
     args = parse()
-    folder_path = os.path.join(os.environ['HOME'], "Documents/Mission/out/basic_checks")
+    folder_path = os.path.join(os.environ['HOME'], args.out)
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
     if not args.force:
