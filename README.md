@@ -7,6 +7,7 @@ Cybersecurity tools
 - 🚀 [Installation](#installation)
 - 📖 [Utilisation](#utilisation)
 - 🛠️ [Troubleshooting](#troubleshooting)
+- 📢 [Disclaimer](#disclaimer)
 
 ## About
 
@@ -68,6 +69,13 @@ unzip feroxbuster_amd64.deb.zip
 sudo apt install ./feroxbuster_*_amd64.deb
 ```
 Moreover you need to have clone the Seclists repo in /usr/share/wordlists (be sure to check the typo SecLists and Seclists) before being able to run the command.
+
+## Disclaimer
+
+**Legal Notice**:
+&nbsp;&nbsp;&nbsp;&nbsp;Unauthorized use of this tool on systems or networks without explicit authorization from the respective owners may violate applicable laws and regulations. Users are responsible for ensuring compliance with legal and ethical standards governing cybersecurity testing and assessments. The owner of this tool is not responsible for any unauthorized access or malicious use of the tool.
+
+
 
 
 
