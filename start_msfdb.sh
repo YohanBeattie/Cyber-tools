@@ -1,3 +1,4 @@
+#! /bin/bash
 # This script launch postgreslql and then create or go to the right workspace
 
 sudo systemctl start postgresql

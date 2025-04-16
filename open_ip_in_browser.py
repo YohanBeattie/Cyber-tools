@@ -1,3 +1,7 @@
+#!/bin/python3
+# This program opens all webpages you want to check (by group of 20) 
+# @authors ybeattie
+
 import webbrowser
 import argparse
 
