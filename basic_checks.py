@@ -11,6 +11,7 @@ import shlex
 import threading
 import xml.etree.ElementTree as ET
 from nslookup import Nslookup
+from utils import run_cmd
 
 def parse():
     '''This function defines the argument of our script'''
@@ -28,12 +29,6 @@ def parse():
         default='--smart -C 404 --thorough -r -w /usr/share/wordlists/SecLists/Discovery/Web-Content/raft-medium-files.txt')
     parser.add_argument("-o", "--output", help="Output logs location", default="Documents/Mission/out/basic_checks", required=False)
     return parser.parse_args()
-
-def run_cmd(cmd, stdout=None, stderr=None):
-    '''This is a special function for running bash cmd and printing or not de result'''
-    print(f'Running {cmd}')
-    return subprocess.run(cmd.split(' '), encoding='utf-8', \
-        stdout=stdout, stderr=stderr, check=False)
 
 def check_http_methods(domains):
     ''' Checks http methods with nmap (not great)'''
@@ -197,19 +192,19 @@ def main():
     print(domains)
 
     #Running headerexposer
-    #run_headerexposer(domains)
+    run_headerexposer(domains)
 
     #Running sslcompare
-    #run_sslcompare(domains)
+    run_sslcompare(domains)
 
     #run sslscan
-    #run_sslscan(domains)
+    run_sslscan(domains)
 
     #Checking allowed methods
     #check_http_methods(domains)
 
     #Running nmaps
-    #run_nmaps(ips, folder_path)
+    run_nmaps(ips, folder_path)
 
     #Running feroxbuster
     run_feroxbusters(domains, args.ferox_args, folder_path)
