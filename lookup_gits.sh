@@ -20,7 +20,6 @@ fi
 SHORT=u:,d:,h
 LONG=git-url:,domain:,help
 OPTS=$(getopt -a -n weather --options $SHORT --longoptions $LONG -- "$@")
-echo $OPTS
 
 eval set -- "$OPTS"
 
@@ -49,5 +48,42 @@ do
   esac
 done
 
-echo "git_url=${git_url}"
-echo "domain=${domain}"
+source_path=$(echo $PWD)
+echo $source_path
+
+
+dir="/tmp/check_enpoint_${domain}_$(date +%s)"
+echo "Saving process logs and info in "$dir 
+mkdir $dir >> tmp.log
+
+if [[ $? != 0 ]]; then
+    echo "mkdir broken. Are you sure there's no typo in the input domain ?"
+    exit 1
+fi
+
+cd $dir >> tmp.log
+
+if [[ $? != 0 ]]; then
+    echo "cd broken"
+    exit 1
+fi
+
+git clone $git_url >> tmp.log
+
+if [[ $? != 0 ]]; then
+    echo "git source not found"
+    exit 1
+fi
+
+cd */
+tree -f -i | sed -s "s/\.\//${domain}\//g"  > endpoint.list
+
+ehco "There is $(wc -l endpoint.list) to open"
+python3 $source_path/open_ip_in_browser.py -f endpoint.list
+
+
+rm -r $dir
+
+
+
+
