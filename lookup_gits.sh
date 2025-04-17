@@ -78,7 +78,7 @@ fi
 cd */
 tree -f -i | sed -s "s/\.\//${domain}\//g"  > endpoint.list
 
-ehco "There is $(wc -l endpoint.list) to open"
+echo "There is $(wc -l endpoint.list) to open"
 python3 $source_path/open_ip_in_browser.py -f endpoint.list
 
 
