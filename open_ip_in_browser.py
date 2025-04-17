@@ -31,7 +31,7 @@ def main():
     args = parse()
     with open(args.file, 'r', encoding='utf-8') as f:
         ip_ports = [line.strip() for line in f.readlines()]
-        urls = ["http://"+ip_port+'/' for ip_port in ip_ports]+["https://"+ip_port+'/' for ip_port in ip_ports]
+        urls = ["http://"+ip_port for ip_port in ip_ports]+["https://"+ip_port for ip_port in ip_ports]
         open_urls(urls)
         print("END")
 
