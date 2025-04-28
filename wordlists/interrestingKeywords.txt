@@ -1,0 +1,15 @@
+passw
+user
+wp-config
+bak
+backup
+admin
+root
+bank
+secret
+vpn
+xls
+csv
+invoice
+ssn
+conf

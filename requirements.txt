@@ -2,3 +2,5 @@ nslookup
 headerexposer
 poetry
 sslcompare
+xmltodict
+tld

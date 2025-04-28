@@ -3,6 +3,11 @@
 # @authors ybeattie
 
 import argparse
+import requests
+from tld import get_tld
+from tld.exceptions import TldDomainNotFound
+from os.path import exists
+from utils import printInfo, printError, printSuccess, printWarning
 
 def parse():
     '''This function defines the argument of our script'''
@@ -10,13 +15,9 @@ def parse():
         prog="Looking for typosquatters and domains",
         description="Looks for typosquatters using microsoft tenants, aws buckets, shodan or favicorn",
     )
-    parser.add_argument("-k", "--keyword", help="Keywords or domain to search for", required=True)
+    parser.add_argument("-k", "--keywords", help="Keywords or domain to search for", required=True)
     #parser.add_argument("-o", "--output", help="Output file", required=False)
     return parser.parse_args()
-
-import requests
-from tld import get_tld
-from tld.exceptions import TldDomainNotFound
 
 def generate_typos(domain):
     try:
@@ -91,38 +92,37 @@ def check_tenant_exists(tenant_name):
 def load_wordlist(file_path):
     tenants = set()
     with open(file_path, 'r') as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                tenants.add(line.lower())
+        for line in f.readlines():
+            tenants.add(line.strip().lower())
     return tenants
 
-def main():
-    wordlist_path = "wordlist6.txt"  # Ex: contient juste "micros0ft", "m1crosoft"
+def builtTypoDoms(keywords):
+    printInfo("Building typos...")
+    wordlist_path = "wordlist.txt"
+    with open ('utils/common_TLDs.txt', 'r', encoding='utf-8') as g:
+        domains =[]
+        with open(wordlist_path, 'w', encoding='utf-8') as f:
+            for keyword in keywords:
+                domains += generate_typos(keyword)
+            domains = [[domi.split('.')[0]+'.'+ tld for domi in domains] for tld in g.readlines()]
+            f.writelines(domains)
+    return wordlist_path
+
+def searchMicrosoftTenants(wordlist_path):
+    printInfo("Searching for Micorosft Tenants' typosquatters")
     tenants = load_wordlist(wordlist_path)
-    print(f"🕵️ Vérification de {len(tenants)} tenants...\n")
+    printInfo(f"🕵️ Vérification de {len(tenants)} tenants...\n")
     for tenant in tenants:
         result = check_tenant_exists(tenant)
         domain = f"{tenant}.onmicrosoft.com"
         if result is True:
-            print(f"[✅] {domain} existe")
-        elif result is False:
-            #print(f"[❌] {domain} n'existe pas")
-            pass
+            printSuccess(f"{domain} existe")
         else:
-            print(f"[⚠️] Erreur ou indéterminé pour {domain}")
-
-def builtTypoDoms(keywords):
-    with open ('common_TLDs.txt', 'r', encoding='utf-8') as g:
-        domains =[]
-        for keyword in keywords:
-            domains += generate_typos(keyword)
-        domains = [[domi.split('.')[0]+'.'+ tld for domi in domains] for tld in g.readlines()]
-
-
-def searchMicrosoftTenants(keyword):
+            printWarning(f"[⚠️] Erreur ou indéterminé pour {domain}")
     return 0
 
+def searchBlackHatWarfare(keyword): # ?
+    return 0
 
 def searchShodanMention(keyword):
     return 0
@@ -135,6 +135,16 @@ def searchSameFavicon(keyword):
 
 def main():
     '''Unifing all the search engines'''
+    #Generating typos
+    args = parse()
+    if exists(args.keywords):
+        printInfo('Input file detected')
+        keywords = load_wordlist(args.keywords)
+    else :
+        printInfo('Keyword input detected')
+        keywords = [args.keywords]
+    wordlist_path = builtTypoDoms(keywords=keywords)
+    searchMicrosoftTenants(wordlist_path=wordlist_path)
     return 0
 
 
