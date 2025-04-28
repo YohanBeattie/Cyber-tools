@@ -1,0 +1,6 @@
+com
+fr
+net
+org
+cz
+co

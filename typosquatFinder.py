@@ -99,7 +99,7 @@ def load_wordlist(file_path):
 def builtTypoDoms(keywords):
     printInfo("Building typos...")
     wordlist_path = "wordlist.txt"
-    with open ('utils/common_TLDs.txt', 'r', encoding='utf-8') as g:
+    with open ('wordlists/tlds.txt', 'r', encoding='utf-8') as g:
         domains =[]
         with open(wordlist_path, 'w', encoding='utf-8') as f:
             for keyword in keywords:
