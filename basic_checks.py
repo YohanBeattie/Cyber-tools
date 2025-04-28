@@ -26,7 +26,7 @@ def parse():
         help="Force script to execute (even without Lab-IP)")
     parser.add_argument("--ferox-args", required=False,
         help="Argument provided to the fuzzing part. See 'feroxbuster -h' for felp",
-        default='--smart -C 404 --thorough -r -w /usr/share/wordlists/SecLists/Discovery/Web-Content/raft-medium-files.txt')
+        default='--smart -C 404 --thorough --silent -r -w /usr/share/wordlists/SecLists/Discovery/Web-Content/raft-medium-files.txt')
     parser.add_argument("-o", "--output", help="Output logs location", default="Documents/Mission/out/basic_checks", required=False)
     return parser.parse_args()
 
