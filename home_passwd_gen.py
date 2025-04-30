@@ -28,9 +28,9 @@ def main():
     ####################################################################
     #Insert a sample of words in the above lists
     #It is advise to let a empty string in each list
-    words1 = ['mon', 'ma','']
-    words2 = [ 'entreprise', 'Company','']
-    date = ['2019', '2020', '2021', '2022', '2023', '2024', '']
+    words1 = ['avem', 'AVEM','Avem','']
+    words2 = [ 'group', 'GROUP','']
+    date = ['2022', '2023', '2024', '2025']
     spe_char = ['$', '!', '&', '=', '#', '_', '$', '']
     ######################################################################
     passwd_little = []
@@ -49,8 +49,7 @@ def main():
 
     #print(passwd_no_date[0:10])
     passwd = passwd_little
-    print('Launching character replacement on '+str(len(passwd_little)))
-    print(passwd_little)
+    print('Launching character replacement on '+str(len(passwd_little))+' passwords')
     with open(args.output, 'w', encoding='utf-8') as g:
         for password in passwd_little:
             #print(str(i) + '/'+str(len(passwd)))
@@ -83,10 +82,11 @@ def main():
                     g.write(passwd_iterator+'\n')
     print('Launching writting output')
 
-    with open(args.output, 'w', encoding='utf-8') as g:
+    with open(args.output, 'a', encoding='utf-8') as g:
         for password in passwd:
             g.write(password+'\n')
-    print('DONE')
+    print(f'File was created : {args.output}')
+    print('END')
 
 if __name__=='__main__':
     main()
