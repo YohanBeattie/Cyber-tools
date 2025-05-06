@@ -1,10 +1,12 @@
 #!/bin/python3
-# This program automatize ftp bruteforce login attempt
-#@authors arjnklc, ybeattie
+'''
+This program automatize ftp bruteforce login attempt
+@authors ybeattie inspired by arjnklc
+'''
 
 import argparse
 import sys
-from ftplib import FTP
+from ftplib import FTP, all_errors
 
 def parse():
     '''This function tests the FTP authentication'''
@@ -17,20 +19,6 @@ def parse():
     parser.add_argument("-w", "--wordlist")
     return parser.parse_args()
 
-
-def check_anonymous_login(target):
-    '''Test if the anonymous login works'''
-    try:
-        ftp = FTP(target)
-        ftp.login()
-        print("\n[+] Anonymous login is open.")
-        print("\n[+] Username : anonymous")
-        print("\n[+] Password : anonymous\n")
-        ftp.quit()
-    except Exception:
-        pass
-
-
 def ftp_login(target, username, password):
     '''Function performing a ftp login'''
     try:
@@ -41,7 +29,7 @@ def ftp_login(target, username, password):
         print(f"\n[!] Username : {format(username)}")
         print(f"\n[!] Password : {format(password)}")
         sys.exit(0)
-    except Exception:
+    except all_errors:
         pass
 
 
@@ -67,7 +55,7 @@ def main():
     args = parser.parse_args()
     print("Testing anonymous login")
     target = args.target
-    check_anonymous_login(target)
+    ftp_login(target, "anonymous", "anonymous")
 
     if args.wordlist:
         wordlist = args.wordlist

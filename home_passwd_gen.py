@@ -1,6 +1,8 @@
 #!/bin/python3
-# This program creates a custom password dictionnary 
-# @authors ybeattie
+'''
+This program creates a custom password dictionnary
+@authors ybeattie
+'''
 
 import itertools
 import argparse
@@ -19,7 +21,8 @@ def replacer(letter, char, word, start):
     ''' Recursive function to replace a charcter by a similar one'''
     for rang in range(start, len(word)):
         if word[rang] == letter:
-            return replacer(letter, char, word[:rang]+word[rang:].replace(letter, char, 1), rang+1)+replacer(letter, char, word, rang+1)
+            return replacer(letter, char, word[:rang]+word[rang:].replace(letter, char, 1), rang+1)\
+                        +replacer(letter, char, word, rang+1)
     return [word]
 
 def main():
