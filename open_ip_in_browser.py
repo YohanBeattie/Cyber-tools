@@ -64,7 +64,7 @@ def open_urls(urls, args):
     return 0
 
 def main():
-    '''This core fucntion gather the ip:port given, build urls and open them'''
+    '''This core funttion gather the ip:port given, build urls and open them'''
     args = parse()
     with open(args.file, 'r', encoding='utf-8') as f:
         ip_ports = [line.strip() for line in f.readlines()]
