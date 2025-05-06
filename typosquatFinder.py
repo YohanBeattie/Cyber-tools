@@ -1,82 +1,34 @@
 #!/bin/python3
-# Test automatisé utils en reconnaissance externe et typosquatting
-# @authors ybeattie
+'''
+Test automatisé utils en reconnaissance externe et typosquatting
+@authors ybeattie
+'''
 
 import argparse
-import requests
-from tld import get_tld
-from tld.exceptions import TldDomainNotFound
 from os.path import exists
-from utils import printInfo, printError, printSuccess, printWarning
+import sys
+import traceback
+from queue import Queue
+from threading import Thread
+import shlex
+import requests
+import xmltodict
+from utils import load_wordlist, printInfo, printSuccess, printError,run_cmd
+from generate_typos import builtTypoDoms
 
 def parse():
     '''This function defines the argument of our script'''
     parser = argparse.ArgumentParser(
-        prog="Looking for typosquatters and domains",
-        description="Looks for typosquatters using microsoft tenants, aws buckets, shodan or favicorn",
+        prog="typosquatFinder",
+        description="Looks for typosquatters using microsoft tenants, \
+            aws buckets, shodan and favicorn",
     )
     parser.add_argument("-k", "--keywords", help="Keywords or domain to search for", required=True)
     #parser.add_argument("-o", "--output", help="Output file", required=False)
     return parser.parse_args()
 
-def generate_typos(domain):
-    try:
-        tld = get_tld(f"http://{domain}", as_object=True)
-        name = domain[:-(len(tld.tld) + 1)]  # remove TLD and dot
-    except TldDomainNotFound:
-        # If TLD is not recognized, assume the last part is the TLD
-        parts = domain.split('.')
-        if len(parts) > 1:
-            name = '.'.join(parts[:-1])
-            tld = parts[-1]
-        else:
-            # If there's no dot, treat the whole string as the name
-            name = domain
-            tld = ''
-    
-    typos = []
-    
-    # Common typos
-    keyboards = {
-        'qwerty': {
-            'q': 'wa', 'w': 'qes', 'e': 'wrd', 'r': 'eft', 't': 'rgy',
-            'y': 'thu', 'u': 'yij', 'i': 'uok', 'o': 'ipl', 'p': 'o',
-            'a': 'qwsz', 's': 'awedxz', 'd': 'serfcx', 'f': 'drtgvc', 'g': 'ftyhbv',
-            'h': 'gyujnb', 'j': 'huikmn', 'k': 'jiolm', 'l': 'kop',
-            'z': 'asx', 'x': 'zsdc', 'c': 'xdfv', 'v': 'cfgb', 'b': 'vghn', 'n': 'bhjm', 'm': 'njk'
-        }
-    }
-    
-    # Generate typos
-    for i, c in enumerate(name):
-        for adj in keyboards['qwerty'].get(c.lower(), ''):
-            typos.append(name[:i] + adj + name[i+1:])
-    
-    # Omissions
-    for i in range(len(name)):
-        typos.append(name[:i] + name[i+1:])
-    
-    # Duplications
-    for i in range(len(name)):
-        typos.append(name[:i] + name[i] + name[i:])
-    
-    # Transpositions
-    for i in range(len(name)-1):
-        typos.append(name[:i] + name[i+1] + name[i] + name[i+2:])
-    
-    # Alt encodings (ASCII )
-    alternatives = {'s': '5', 'l': '1', 'o': '0', 'a': '4', 'e': '3', 'i': '1', 't': '7'}
-    for i, c in enumerate(name):
-        if c.lower() in alternatives:
-            typos.append(name[:i] + alternatives[c.lower()] + name[i+1:])
-    
-    # Add the TLD back to the typos
-    if tld:
-        return [f"{typo}.{tld}" for typo in set(typos)]
-    else:
-        return list(set(typos))
-    
 def check_tenant_exists(tenant_name):
+    '''This function checks the existent of a Micosoft Tenants'''
     url = f"https://login.microsoftonline.com/{tenant_name}/v2.0/.well-known/openid-configuration"
     try:
         response = requests.get(url, timeout=5)
@@ -89,26 +41,8 @@ def check_tenant_exists(tenant_name):
     except requests.exceptions.RequestException:
         return None
 
-def load_wordlist(file_path):
-    tenants = set()
-    with open(file_path, 'r') as f:
-        for line in f.readlines():
-            tenants.add(line.strip().lower())
-    return tenants
-
-def builtTypoDoms(keywords):
-    printInfo("Building typos...")
-    wordlist_path = "wordlist.txt"
-    with open ('wordlists/tlds.txt', 'r', encoding='utf-8') as g:
-        domains =[]
-        with open(wordlist_path, 'w', encoding='utf-8') as f:
-            for keyword in keywords:
-                domains += generate_typos(keyword)
-            domains = [[domi.split('.')[0]+'.'+ tld for domi in domains] for tld in g.readlines()]
-            f.writelines(domains)
-    return wordlist_path
-
 def searchMicrosoftTenants(wordlist_path):
+    '''This function checks if a corresponding tenants exists for each domain given'''
     printInfo("Searching for Micorosft Tenants' typosquatters")
     tenants = load_wordlist(wordlist_path)
     printInfo(f"🕵️ Vérification de {len(tenants)} tenants...\n")
@@ -117,34 +51,101 @@ def searchMicrosoftTenants(wordlist_path):
         domain = f"{tenant}.onmicrosoft.com"
         if result is True:
             printSuccess(f"{domain} existe")
-        else:
-            printWarning(f"[⚠️] Erreur ou indéterminé pour {domain}")
     return 0
 
-def searchBlackHatWarfare(keyword): # ?
+bucket_q = Queue()
+download_q = Queue()
+url404 = []
+
+def fuzzing(url_list, wordlist):
+    '''Fuzzing all domain aws to find files'''
+    for url in url_list:
+        run_cmd(f"feroxbuster -u {url} -t 20 -C 403,500,503 -k --silent -w {shlex.quote(wordlist)} --dont-scan soap", stdout=None, myinput=None, silent=False)
+
+def fetchAWS(url):
+    ''' Function requesting the url to check if bucket is accessible'''
+    response = requests.get(url, timeout=5)
+    if response.status_code == 403 or response.status_code == 404:
+        #print(f'404 : {url}. Still trying fuzzing...')
+        url404.append(url)
+    elif response.status_code == 200:
+        printSuccess(f'200 : {url}')
+        if "Content" in response.text:
+            status200AWS(response, url)
+
+def bucket_workerAWS():
+    '''Creating a bucket working'''
+    while True:
+        item = bucket_q.get()
+        try:
+            fetchAWS(item)
+        except Exception as e:
+            traceback.print_exc(file=sys.stdout)
+            printError(e)
+        bucket_q.task_done()
+
+def status200AWS(response, line):
+    '''Function called when a bucket is existing. Checks keys'''
+    printSuccess("Found bucket. Pilfering "+line.rstrip() + '...')
+    objects = xmltodict.parse(response.text)
+    Keys = []
+    try:
+        contents = objects['ListBucketResult']['Contents']
+        if not isinstance(contents, list):
+            contents = [contents]
+        for child in contents:
+            Keys.append(child['Key'])
+    except KeyError:
+        pass
+    printInfo(f"Found keys : {str(Keys)}")
+
+def searchBucketAWS(keywords):
+    '''AWS main function looking for AWS buckets'''
+    printInfo('Buckets will not be downloaded')
+    # start up bucket workers
+    for _ in range(0, 5): # 5 being the number of thread
+        t = Thread(target=bucket_workerAWS)
+        t.daemon = True
+        t.start()
+
+    with open(keywords, 'r', encoding='utf-8') as f:
+        for line in f:
+            bucket = 'http://'+line.rstrip()+'.s3.amazonaws.com'
+            bucket_q.put(bucket)
+
+    bucket_q.join()
+    return 0
+
+def searchSameFavicon(keyword):
     return 0
 
 def searchShodanMention(keyword):
     return 0
 
-def searchBucketAWS(keyword):
-    return 0
-
-def searchSameFavicon(keyword):
+def searchBlackHatWarfare(keyword): # ?
     return 0
 
 def main():
     '''Unifing all the search engines'''
     #Generating typos
     args = parse()
-    if exists(args.keywords):
+    if exists(args.keywords): # Checks if the input is an existing file
         printInfo('Input file detected')
         keywords = load_wordlist(args.keywords)
     else :
         printInfo('Keyword input detected')
         keywords = [args.keywords]
     wordlist_path = builtTypoDoms(keywords=keywords)
-    searchMicrosoftTenants(wordlist_path=wordlist_path)
+    printInfo("Searching for Microsoft Tenants")
+    #searchMicrosoftTenants(wordlist_path=wordlist_path)
+    printInfo("Searching AWS buckets")
+    searchBucketAWS(keywords=wordlist_path)
+    printInfo('Running fuzzing on all urls for AWS buckets(even 404)')
+    with open('tmp.txt', 'r', encoding='utf-8') as f:
+        tmp_url = []
+        for url in f.readlines():
+            tmp_url.append(url.strip())
+    fuzzing(tmp_url, "tmp2.txt")#/usr/share/SecLists/Discovery/Web-Content/quickhits.txt")
     return 0
 
 
