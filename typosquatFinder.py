@@ -11,6 +11,7 @@ import traceback
 from queue import Queue
 from threading import Thread
 import shlex
+from subprocess import PIPE
 import requests
 import xmltodict
 from utils import load_wordlist, printInfo, printSuccess, printError,run_cmd
@@ -60,7 +61,10 @@ url404 = []
 def fuzzing(url_list, wordlist):
     '''Fuzzing all domain aws to find files'''
     for url in url_list:
-        run_cmd(f"feroxbuster -u {url} -t 20 -C 403,500,503 -k --silent -w {shlex.quote(wordlist)} --dont-scan soap", stdout=None, myinput=None, silent=False)
+        ps = run_cmd(f"feroxbuster -u {url} -t 20 -C 403,500,503 -k --silent -w {shlex.quote(wordlist)} --dont-scan soap", stdout=PIPE, myinput=None, silent=True)
+        print(ps.stdout)
+        run_cmd(f"sed '/^$/d'", stdout=PIPE, stdin=ps.stdout, silent=False)
+        ps.stdout.close()
 
 def fetchAWS(url):
     ''' Function requesting the url to check if bucket is accessible'''
@@ -145,7 +149,7 @@ def main():
         tmp_url = []
         for url in f.readlines():
             tmp_url.append(url.strip())
-    fuzzing(tmp_url, "tmp2.txt")#/usr/share/SecLists/Discovery/Web-Content/quickhits.txt")
+    fuzzing(url404, "/usr/share/SecLists/Discovery/Web-Content/quickhits.txt")
     return 0
 
 

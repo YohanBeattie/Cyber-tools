@@ -1,6 +1,7 @@
-com
-fr
-net
-org
-cz
-co
+.com
+.fr
+.net
+
+.org
+.cz
+.co
