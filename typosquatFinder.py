@@ -16,6 +16,7 @@ import requests
 import xmltodict
 from utils import load_wordlist, printInfo, printSuccess, printError,run_cmd
 from generate_typos import builtTypoDoms
+import subprocess
 
 def parse():
     '''This function defines the argument of our script'''
@@ -61,10 +62,14 @@ url404 = []
 def fuzzing(url_list, wordlist):
     '''Fuzzing all domain aws to find files'''
     for url in url_list:
-        ps = run_cmd(f"feroxbuster -u {url} -t 20 -C 403,500,503 -k --silent -w {shlex.quote(wordlist)} --dont-scan soap", stdout=PIPE, myinput=None, silent=True)
-        print(ps.stdout)
-        run_cmd(f"sed '/^$/d'", stdout=PIPE, stdin=ps.stdout, silent=False)
-        ps.stdout.close()
+        '''ps = subprocess.Popen(("feroxbuster", "-u", url, "-t", "20", "-C", "403,500,503", "-k", "-w", shlex.quote(wordlist), "--dont-scan", "soap"), stdout=subprocess.PIPE)
+        output = subprocess.check_output(('sed', '/^$/d'), stdin=ps.stdout)
+        ps.wait()
+        '''
+        with open('ferox_output.log', 'w', encoding='utf-8') as f: # this could be bugged by parallèle scan
+            ps = run_cmd(f"feroxbuster -u {url} -t 20 -C 403,500,503 -k --silent -w {shlex.quote(wordlist)} --dont-scan soap", stdout=PIPE, silent=True)
+            run_cmd(f"awk NF ", myinput=ps.stdout, silent=True)
+
 
 def fetchAWS(url):
     ''' Function requesting the url to check if bucket is accessible'''
