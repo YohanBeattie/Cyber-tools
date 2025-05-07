@@ -15,6 +15,7 @@ def parse():
     parser = argparse.ArgumentParser(
         prog="Open browser with all the pages",
         description="Basically opens http and https for all IP:Port given",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument("-f", "--file", help="IP file (IP:Port one by line)", required=True)
     parser.add_argument("-p", "--simultaneous-pages", help="The number of page you want to open by wave", required=False, type=int, default=50)
@@ -26,7 +27,6 @@ def parse():
 
 def open_urls(urls, args):
     '''This function opens a list of url in your favorite browser'''
-
     if args.filter_status:
         filtered_status = args.filter_status.split(',')
     else :
@@ -58,7 +58,7 @@ def open_urls(urls, args):
 
             
         else:
-            input('Press any key to open the next 20 pages')
+            input(f'Press any key to open the next {nbr_pages} pages')
             open_urls(urls[nbr_pages:], args)
             break
     return 0
