@@ -39,12 +39,12 @@ def load_wordlist(file_path):
             tenants.add(line.strip().lower())
     return tenants
 
-def run_cmd(cmd, stdin=None, stdout=None, stderr=None, silent=False, myinput=None):
+def run_cmd(cmd, stdin=None, stdout=None, stderr=None, silent=False, myprint=True, myinput=None):
     ''' This is a special function for running bash cmd and printing or not de result
     WARNING : Please be sure to rightfully treat the input '''
-    if not silent :
+    if myprint :
         printInfo(f'Running {cmd}')
-    else:
+    if silent:
         stdout=open(devnull, "wb")
     return subprocess.run(cmd.split(' '), encoding='utf-8', \
         stdout=stdout, stderr=stderr, stdin=stdin, input=myinput, check=False)

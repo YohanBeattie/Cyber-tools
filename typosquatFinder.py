@@ -14,9 +14,8 @@ import shlex
 from subprocess import PIPE
 import requests
 import xmltodict
-from utils import load_wordlist, printInfo, printSuccess, printError,run_cmd
+from utils import load_wordlist, printInfo, printSuccess, printError,run_cmd, printWarning
 from generate_typos import builtTypoDoms
-import subprocess
 
 def parse():
     '''This function defines the argument of our script'''
@@ -26,6 +25,9 @@ def parse():
             aws buckets, shodan and favicorn",
     )
     parser.add_argument("-k", "--keywords", help="Keywords or domain to search for", required=True)
+    parser.add_argument("-v", "--verbose", help="Add verbosity to the output", action="store_true", required=False)
+    parser.add_argument("-w", "--wordlist", help="A wordlist for fuzzing on aws bucket", default="/usr/share/SecLists/Discovery/Web-Content/quickhits.txt", required=False)
+    parser.add_argument("-f", "-fuzz", help="Fuzz on aws tenants even if the bucket returns à 404 status code", action="store_true")
     #parser.add_argument("-o", "--output", help="Output file", required=False)
     return parser.parse_args()
 
@@ -43,57 +45,54 @@ def check_tenant_exists(tenant_name):
     except requests.exceptions.RequestException:
         return None
 
-def searchMicrosoftTenants(wordlist_path):
+def search_microsoft_tenants(wordlist_path):
     '''This function checks if a corresponding tenants exists for each domain given'''
     printInfo("Searching for Micorosft Tenants' typosquatters")
     tenants = load_wordlist(wordlist_path)
-    printInfo(f"🕵️ Vérification de {len(tenants)} tenants...\n")
+    printInfo(f"🕵️ Checking on {len(tenants)} tenants...\n")
     for tenant in tenants:
         result = check_tenant_exists(tenant)
         domain = f"{tenant}.onmicrosoft.com"
         if result is True:
-            printSuccess(f"{domain} existe")
+            printSuccess(f"{domain} exist")
+        elif VERBOSE:
+            printWarning(f"{domain} do not exist")
     return 0
 
 bucket_q = Queue()
 download_q = Queue()
 url404 = []
+VERBOSE = False
 
 def fuzzing(url_list, wordlist):
     '''Fuzzing all domain aws to find files'''
     for url in url_list:
-        '''ps = subprocess.Popen(("feroxbuster", "-u", url, "-t", "20", "-C", "403,500,503", "-k", "-w", shlex.quote(wordlist), "--dont-scan", "soap"), stdout=subprocess.PIPE)
-        output = subprocess.check_output(('sed', '/^$/d'), stdin=ps.stdout)
-        ps.wait()
-        '''
-        with open('ferox_output.log', 'w', encoding='utf-8') as f: # this could be bugged by parallèle scan
-            ps = run_cmd(f"feroxbuster -u {url} -t 20 -C 403,500,503 -k --silent -w {shlex.quote(wordlist)} --dont-scan soap", stdout=PIPE, silent=True)
-            run_cmd(f"awk NF ", myinput=ps.stdout, silent=True)
+        url = shlex.quote(url)
+        ps = run_cmd(f"feroxbuster -u {url} -t 20 -C 403,500,503 -k -W 0 --silent -w {shlex.quote(wordlist)} --dont-scan soap --filter-similar-to {url} --filter-similar-to {url}/%ff/", stdout=PIPE, myprint=VERBOSE)
+        run_cmd("awk NF ", myinput=ps.stdout, myprint=False)
 
-
-def fetchAWS(url):
+def fetch_aws(url):
     ''' Function requesting the url to check if bucket is accessible'''
     response = requests.get(url, timeout=5)
     if response.status_code == 403 or response.status_code == 404:
-        #print(f'404 : {url}. Still trying fuzzing...')
         url404.append(url)
     elif response.status_code == 200:
         printSuccess(f'200 : {url}')
         if "Content" in response.text:
-            status200AWS(response, url)
+            status200_aws(response, url)
 
-def bucket_workerAWS():
+def bucket_worker_aws():
     '''Creating a bucket working'''
     while True:
         item = bucket_q.get()
         try:
-            fetchAWS(item)
+            fetch_aws(item)
         except Exception as e:
             traceback.print_exc(file=sys.stdout)
             printError(e)
         bucket_q.task_done()
 
-def status200AWS(response, line):
+def status200_aws(response, line):
     '''Function called when a bucket is existing. Checks keys'''
     printSuccess("Found bucket. Pilfering "+line.rstrip() + '...')
     objects = xmltodict.parse(response.text)
@@ -108,12 +107,12 @@ def status200AWS(response, line):
         pass
     printInfo(f"Found keys : {str(Keys)}")
 
-def searchBucketAWS(keywords):
+def search_bucket_aws(keywords):
     '''AWS main function looking for AWS buckets'''
     printInfo('Buckets will not be downloaded')
     # start up bucket workers
     for _ in range(0, 5): # 5 being the number of thread
-        t = Thread(target=bucket_workerAWS)
+        t = Thread(target=bucket_worker_aws)
         t.daemon = True
         t.start()
 
@@ -137,6 +136,7 @@ def searchBlackHatWarfare(keyword): # ?
 def main():
     '''Unifing all the search engines'''
     #Generating typos
+    global VERBOSE
     args = parse()
     if exists(args.keywords): # Checks if the input is an existing file
         printInfo('Input file detected')
@@ -145,16 +145,19 @@ def main():
         printInfo('Keyword input detected')
         keywords = [args.keywords]
     wordlist_path = builtTypoDoms(keywords=keywords)
+    if VERBOSE:
+        printInfo("Verbose option selected")
+    VERBOSE = True if args.verbose else False
     printInfo("Searching for Microsoft Tenants")
-    #searchMicrosoftTenants(wordlist_path=wordlist_path)
+    #search_microsoft_tenants(wordlist_path=wordlist_path)
     printInfo("Searching AWS buckets")
-    searchBucketAWS(keywords=wordlist_path)
+    search_bucket_aws(keywords=wordlist_path)
     printInfo('Running fuzzing on all urls for AWS buckets(even 404)')
     with open('tmp.txt', 'r', encoding='utf-8') as f:
         tmp_url = []
         for url in f.readlines():
             tmp_url.append(url.strip())
-    fuzzing(url404, "/usr/share/SecLists/Discovery/Web-Content/quickhits.txt")
+    fuzzing(url404, args.wordlist)
     return 0
 
 
