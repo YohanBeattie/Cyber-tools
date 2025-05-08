@@ -4,4 +4,3 @@ poetry
 sslcompare
 xmltodict
 tld
-tqdm
