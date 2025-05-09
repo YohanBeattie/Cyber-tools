@@ -1,0 +1,16 @@
+# Fichier de configuration pour les clés d'API
+# Ce fichier rassemble les secrets utilisés pour la recherche de favicons via des outils tiers
+# @authors ybeattie
+
+api_keys:
+  SHODAN_KEY: ""
+  NETLAS_KEY: ""
+  FOFA_KEY: ""
+# Non supporté pour le moment
+unsupported_keys:
+  VIRUSTOTAL_KEY: ""
+  CENSYS_KEY: ""
+  BINARYEDGE_KEY: ""
+  HUNTERHOW_KEY: ""
+  CRIMINALIP_KEY: ""
+  

@@ -6,6 +6,7 @@ This program gather all useful and transverse functions
 
 import subprocess
 from os import devnull
+from os import environ
 
 class bcolors:
     '''Class defining the colors of the prints'''
@@ -14,6 +15,24 @@ class bcolors:
     WARNING = '\033[93m'
     FAIL = '\033[91m'
     ENDC = '\033[0m'
+
+def signal_handler(sig, frame):
+    '''Catch user interruption and cleans before stopping'''
+    print('You pressed Ctrl+C, cleaning...')
+    clean()
+    exit(0)
+
+def setvariables(keys, reset=False):
+    '''Sets API keys as variables'''
+    for _, (key, value) in enumerate(keys.items()):
+        if reset :
+            environ[key] = ''
+        else:
+            environ[key] = value
+    
+def clean():
+    '''Unsets all API_keys on interruptions'''
+    setvariables({}, reset=True)
 
 def printInfo(info):
     '''Special function to print some info'''
