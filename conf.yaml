@@ -2,6 +2,8 @@
 # Ce fichier rassemble les secrets utilisés pour la recherche de favicons via des outils tiers
 # @authors ybeattie
 
+PUBLIC_IP: ""
+
 api_keys:
   SHODAN_KEY: ""
   NETLAS_KEY: ""
