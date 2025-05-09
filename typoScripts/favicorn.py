@@ -34,7 +34,6 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 init(autoreset=True)
 
-
 OUTPUT_DIR = "api_responses"
 
 try:
@@ -42,7 +41,6 @@ try:
 except ImportError as e:
     print("[-] {}. Please, install all required dependencies!".format(e))
     sys.exit(1)
-
 
 def make_url_tiny(url):
     request_url = f"http://tinyurl.com/api-create.php?{urlencode({'url':url})}"
@@ -118,13 +116,13 @@ class Favicon:
         request_data = "https://app.netlas.io/api/get_perceptual_hash/"
         try:
             if source.startswith('http'):
-                response = requests.get(request_url+source)
+                response = requests.get(request_url+source, timeout=5)
                 return response.json().get("average_hash")
             else:
                 files = {'file': ('favicon.png', io.BytesIO(content), 'image/png')}
-                response = requests.post(request_data, files=files)
+                response = requests.post(request_data, files=files, timeout=5)
                 return response.json().get("average_hash")
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             print(f'[-] Error getting perceptual average hash from Netlas: {e}')
 
         return ""
@@ -132,18 +130,21 @@ class Favicon:
     @classmethod
     def from_url(cls, url, custom_type="direct link"):
         """Create Favicon object from a URL"""
-        response = requests.get(url, verify=False)
-        if response.status_code == 200:
-            favi_words = ['image', 'icon']
-            content_type = response.headers['Content-Type']
+        try:
+            response = requests.get(url, verify=False, timeout=5)
+            if response.status_code == 200:
+                favi_words = ['image', 'icon']
+                content_type = response.headers['Content-Type']
 
-            if not any(re.findall('|'.join(favi_words) , content_type)):
-                raise Exception(f"Invalid content-type {str(content_type)} for URL: {url}")
+                if not any(re.findall('|'.join(favi_words) , content_type)):
+                    raise Exception(f"Invalid content-type {str(content_type)} for URL: {url}")
 
-            content = response.content
-            return cls(content, source=url, type=custom_type)
-        else:
-            raise Exception(f"Failed to fetch favicon from URL: {url}")
+                content = response.content
+                return cls(content, source=url, type=custom_type)
+            else:
+                raise Exception(f"Failed to fetch favicon from URL: {url}")
+        except requests.exceptions.RequestException:
+            print(f'Error : {url} is not accessible')
 
     @classmethod
     def from_file(cls, filepath):
@@ -687,19 +688,19 @@ if __name__ == "__main__":
     if args.add_from_search_engines and args.domain:
         unique_favicons = set(favicons)
         urls = make_se_links(args.domain)
-        for url in urls:
+        for url_iter in urls:
             try:
-                new_favicon = Favicon.from_url(url[1], custom_type=f'search engine {url[0]}')
+                new_favicon = Favicon.from_url(url_iter[1], custom_type=f'search engine {url_iter[0]}')
                 if new_favicon not in unique_favicons:
                     favicons.append(new_favicon)
                     unique_favicons.add(new_favicon)
             except Exception as e:
-                print(f"Error processing favicon from URL {url} from search engine {url[0]}: {e}")
+                print(f"Error processing favicon from URL {url_iter} from search engine {url_iter[0]}: {e}")
 
     preview_results = []
-    preview_file = '_preview_results.txt'
-    were_links_saved = False
-    no_results = False
+    PREVIEW_FILE = '_preview_results.txt'
+    WERE_LINKS_SAVED = False
+    NO_RESULTS = False
 
     if favicons:
         for favicon in favicons:
@@ -709,8 +710,8 @@ if __name__ == "__main__":
                 print(favicon.hashes_text()+'\n')
             print(favicon.links_categorized_text())
             if args.save_links_filename:
-                with open(args.save_links_filename, "a") as f:
-                    were_links_saved = True
+                with open(args.save_links_filename, "a", encoding='utf-8') as f:
+                    WERE_LINKS_SAVED = True
                     f.write(favicon.links_only_text())
 
         if args.no_fetch:
@@ -731,24 +732,28 @@ if __name__ == "__main__":
 
             preview_results = sorted(list(all_domains)) + sorted(list(all_ips))
             if preview_results:
-                filename = f'{favicon.murmur_hash}{preview_file}'.replace('-', '_')
+                filename = f'{favicon.murmur_hash}{PREVIEW_FILE}'.replace('-', '_')
                 path = os.path.join(OUTPUT_DIR, filename)
-                with open(filename, 'w') as file:
+                with open(filename, 'w', encoding='utf-8') as file:
                     file.write('\n'.join(preview_results))
-                    print(f'{Fore.GREEN}Preview results for favicon with MurmurHash {favicon.murmur_hash} saved to {path}')
+                    print(f'{Fore.GREEN}Preview results for favicon \
+                          with MurmurHash {favicon.murmur_hash} saved to {path}')
             else:
-                no_results = True
+                NO_RESULTS = True
     else:
         print("No results.")
-        no_results = True
+        NO_RESULTS = True
 
-    if no_results:
+    if NO_RESULTS:
         if args.file:
-            print(f'{Fore.YELLOW}Try to specify as an input a domain with -d or an url of favicon with -u!')
+            print(f'{Fore.YELLOW}Try to specify as an input a domain \
+                  with -d or an url of favicon with -u!')
         elif args.uri:
-            print(f'{Fore.YELLOW}Try to specify as an input a domain with -d or a PNG/ICO file of favicon with -f!')
+            print(f'{Fore.YELLOW}Try to specify as an input a domain \
+                  with -d or a PNG/ICO file of favicon with -f!')
         elif args.domain:
-            print(f'{Fore.YELLOW}Try to specify as an input an url of favicon with -u or a PNG/ICO file of favicon with -f!')
+            print(f'{Fore.YELLOW}Try to specify as an input an url of \
+                  favicon with -u or a PNG/ICO file of favicon with -f!')
 
-    if were_links_saved:
+    if WERE_LINKS_SAVED:
         print(f'{Fore.GREEN}All links saved to {os.path.abspath(args.save_links_filename)}')

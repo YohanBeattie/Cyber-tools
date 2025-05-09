@@ -1,7 +1,9 @@
 #!/bin/python3
-# This program automatize basic test for web interface
-# @authors ybeattie
-# @version 2.0
+'''
+This program automatize basic test for web interface
+@authors ybeattie
+@version 2.0
+'''
 
 import argparse
 import os
@@ -11,7 +13,8 @@ import shlex
 import threading
 import xml.etree.ElementTree as ET
 from nslookup import Nslookup
-from utils import run_cmd
+from utils import run_cmd, print_error, print_info, print_success, print_warning
+
 
 def parse():
     '''This function defines the argument of our script'''
@@ -26,19 +29,21 @@ def parse():
         help="Force script to execute (even without Lab-IP)")
     parser.add_argument("--ferox-args", required=False,
         help="Argument provided to the fuzzing part. See 'feroxbuster -h' for felp",
-        default='--smart -C 404 --thorough --silent -r -w /usr/share/wordlists/SecLists/Discovery/Web-Content/raft-medium-files.txt')
-    parser.add_argument("-o", "--output", help="Output logs location", default="Documents/Mission/out/basic_checks", required=False)
+        default='--smart -C 404 --thorough --silent -r '
+                    '-w /usr/share/wordlists/SecLists/Discovery/Web-Content/raft-medium-files.txt')
+    parser.add_argument("-o", "--output", help="Output logs location",
+                        default="Documents/Mission/out/basic_checks", required=False)
     return parser.parse_args()
 
 def check_http_methods(domains):
     ''' Checks http methods with nmap (not great)'''
     for domain in domains:
-        print(f'Checking the autorized methods on {domain}')
+        print_info(f'Checking the autorized methods on {domain}')
         run_cmd(f'nmap --script http-methods {shlex.quote(domain)}')
 
 def check_http_redirect(ip, port):
     ''' Checks if the http port redirects to https'''
-    print(f"Checking if http request on {ip} redirects to https")
+    print_info(f"Checking if http request on {ip} redirects to https")
     run_cmd(f'curl http://{shlex.quote(ip)}:{shlex.quote(port)}')
 
 def def_ips_domain(file):
@@ -70,31 +75,29 @@ def run_nslookup(domain):
             if ip not in ips:
                 ips.append(ip)
     except ValueError:
-        print('No dns match for the domain {domain}. Are you sure it\'s a domain ?')
+        print_warning('No dns match for the domain {domain}. Are you sure it\'s a domain ?')
     return ips
 
 def run_sslcompare(domains):
     '''Running sslcompare on all domains'''
     for domain in domains:
-        print(f"---------Running sslcompare on {shlex.quote(domain)}---------")
-        print(run_cmd(f'sslcompare {shlex.quote(domain)}').stdout)
+        print_info(f"---------Running sslcompare on {shlex.quote(domain)}---------")
+        run_cmd(f'sslcompare {shlex.quote(domain)}', myprint=False)
 
 def run_sslscan(domains):
     '''Running sslscan on all domains'''
     for domain in domains:
-        print(f"---------Running sslscan on {domain}---------")
-        output = run_cmd(f'sslscan {shlex.quote(domain)}').stdout
-        if output:
-            print(output)
+        print_info(f"---------Running sslscan on {domain}---------")
+        run_cmd(f'sslscan {shlex.quote(domain)}')
 
 def run_headerexposer(domains):
     '''Running header exposer on all domains'''
     for domain in domains:
-        print(f"---------Running headerexposer on {domain}---------")
+        print_info(f"---------Running headerexposer on {domain}---------")
         url = 'http://'+shlex.quote(domain) if 'http' not in domain else shlex.quote(domain)
         output = run_cmd(f'headerexposer analyse {url}').stdout
         if output:
-            print(output)
+            print_success(output)
 
 def run_nmaps(ips, path):
     '''Running nmap on all ips concurently'''
@@ -106,7 +109,7 @@ def run_nmaps(ips, path):
         break
     for _,thread in enumerate(threads):
         thread.join()
-        print("All nmaps have ended")
+        print_info("All nmaps have ended")
 
 def run_nmap2(ip, path):
     '''Running nmap and checking http redirection'''
@@ -132,10 +135,10 @@ def run_nmap2(ip, path):
 def check_ip(ip):
     '''This function checks we are doing the test from the wanted source'''
     if not ip.stdout:
-        print('Please be sure you are connected (the use of the correct IP could not be checked)')
+        print_warning('Please be sure you are connected (your public IP could not be checked)')
         exit(1)
     if ip.stdout != '62.23.181.125':
-        print('Please be sure to run your test from the Lab IP')
+        print_warning('Please be sure to run your test from your IP Lab IP')
         exit(1)
 
 def check_waf(domains, ips):
@@ -148,9 +151,9 @@ def check_waf(domains, ips):
 
 def run_feroxbuster(domain, args_ferox, out_path):
     '''Run feroxbuster on a domain'''
-    print(f"--------Fuzzing on {format(domain)} with feroxbuster--------")
-    args_ferox = args_ferox
-    print(args_ferox)
+    print_info(f"--------Fuzzing on {format(domain)} with feroxbuster--------")
+    #args_ferox = args_ferox
+    #print(args_ferox)
     domain = shlex.quote(format(domain))
     cmd=f'feroxbuster -u http://{domain} {args_ferox} -o {out_path}/ferobuster_{domain}.log'
     run_cmd(cmd)
@@ -165,7 +168,7 @@ def run_feroxbusters(domains, args_ferox, path):
         break
     for _,thread in enumerate(threads):
         thread.join()
-        print("All fuzzing have ended")
+        print_info("All fuzzing have ended")
 
 def main():
     '''Main function running all test one after the others'''
@@ -179,17 +182,17 @@ def main():
     try :
         with open(args.scope, 'r', encoding="utf-8") as f:
             ips, domains = def_ips_domain(f)
-            print(f'{str(len(ips))} IPs were found in file')
-            print(f'{str(len(domains))} domain were found in file')
-            print('---------,------Looking for WAF---------------')
+            print_info(f'{str(len(ips))} IPs were found in file')
+            print_info(f'{str(len(domains))} domain were found in file')
+            print_info('---------,------Looking for WAF---------------')
             check_waf(domains, ips)
-            print("---------Running nslookup on domains---------")
+            print_info("---------Running nslookup on domains---------")
             for domain in domains:
                 ips += run_nslookup(domain)
     except FileNotFoundError:
-        print("Looks like the file does not exist")
-    print(ips)
-    print(domains)
+        print_error("Looks like the file does not exist")
+    #print(ips)
+    #print(domains)
 
     #Running headerexposer
     run_headerexposer(domains)
@@ -209,7 +212,7 @@ def main():
     #Running feroxbuster
     run_feroxbusters(domains, args.ferox_args, folder_path)
 
-    print('DONE')
+    print_info('DONE')
 
 if __name__=='__main__':
     main()

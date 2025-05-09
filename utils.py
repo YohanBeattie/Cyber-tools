@@ -7,9 +7,9 @@ This program gather all useful and transverse functions
 import subprocess
 from os import devnull
 from os import environ
-import yaml 
+import yaml
 
-class bcolors:
+class Bcolors:
     '''Class defining the colors of the prints'''
     OKBLUE = '\033[94m'
     OKGREEN = '\033[92m'
@@ -17,7 +17,7 @@ class bcolors:
     FAIL = '\033[91m'
     ENDC = '\033[0m'
 
-def signal_handler(sig, frame):
+def signal_handler():
     '''Catch user interruption and cleans before stopping'''
     print('You pressed Ctrl+C, cleaning...')
     clean()
@@ -25,33 +25,33 @@ def signal_handler(sig, frame):
 
 def setvariables(reset=False):
     '''Sets API keys as variables'''
-    with open("api_keys.yaml", "r", encoding="utf-8") as config:
+    with open("typoScripts/api_keys.yaml", "r", encoding="utf-8") as config:
         config = yaml.safe_load(config)
         for _, (key, value) in enumerate(config["api_keys"].items()):
             if reset :
                 environ[key] = ''
             else:
                 environ[key] = value
-    
+
 def clean():
     '''Unsets all API_keys on interruptions'''
     setvariables(reset=True)
 
-def printInfo(info):
+def print_info(info):
     '''Special function to print some info'''
-    print(bcolors.OKBLUE + f'[INFO] {info}' + bcolors.ENDC)
+    print(Bcolors.OKBLUE + f'[INFO] {info}' + Bcolors.ENDC)
 
-def printError(error):
+def print_error(error):
     '''Special function to print some error'''
-    print(bcolors.FAIL + f'[ERROR] {error}' + bcolors.ENDC)
+    print(Bcolors.FAIL + f'[ERROR] {error}' + Bcolors.ENDC)
 
-def printSuccess(msg):
+def print_success(msg):
     '''Special function to print some sucess message'''
-    print(bcolors.OKGREEN + f'[+] {msg}' + bcolors.ENDC)
+    print(Bcolors.OKGREEN + f'[+] {msg}' + Bcolors.ENDC)
 
-def printWarning(warn):
+def print_warning(warn):
     '''Special function to print a warning'''
-    print(bcolors.WARNING + f'[-] {warn}' + bcolors.ENDC)
+    print(Bcolors.WARNING + f'[-] {warn}' + Bcolors.ENDC)
 
 def load_wordlist(file_path):
     '''Function transforming a file into a list'''
@@ -65,7 +65,7 @@ def run_cmd(cmd, stdin=None, stdout=None, stderr=None, silent=False, myprint=Tru
     ''' This is a special function for running bash cmd and printing or not de result
     WARNING : Please be sure to rightfully treat the input '''
     if myprint :
-        printInfo(f'Running {cmd}')
+        print_info(f'Running {cmd}')
     if silent:
         stdout=open(devnull, "wb")
     return subprocess.run(cmd.split(' '), encoding='utf-8', \
