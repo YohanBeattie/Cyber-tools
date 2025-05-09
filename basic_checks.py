@@ -11,6 +11,7 @@ import ipaddress
 import subprocess
 import shlex
 import threading
+import yaml
 import xml.etree.ElementTree as ET
 from nslookup import Nslookup
 from utils import run_cmd, print_error, print_info, print_success, print_warning
@@ -137,9 +138,10 @@ def check_ip(ip):
     if not ip.stdout:
         print_warning('Please be sure you are connected (your public IP could not be checked)')
         exit(1)
-    if ip.stdout != '62.23.181.125':
-        print_warning('Please be sure to run your test from your IP Lab IP')
-        exit(1)
+    with open("conf.yaml", "r", encoding="utf-8") as config:
+        if ip.stdout != yaml.safe_load(config)["PUBLIC_IP"]:
+            print_warning('Please be sure to run your test from your IP Lab IP')
+            exit(1)
 
 def check_waf(domains, ips):
     '''This function checks the WAF that is set up'''

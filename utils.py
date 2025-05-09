@@ -25,7 +25,7 @@ def signal_handler():
 
 def setvariables(reset=False):
     '''Sets API keys as variables'''
-    with open("typoScripts/api_keys.yaml", "r", encoding="utf-8") as config:
+    with open("conf.yaml", "r", encoding="utf-8") as config:
         config = yaml.safe_load(config)
         for _, (key, value) in enumerate(config["api_keys"].items()):
             if reset :
