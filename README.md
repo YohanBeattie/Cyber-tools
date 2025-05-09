@@ -19,6 +19,9 @@ chmod +x install.sh
 ./install.sh
 source ./venv/bin/activate
 ```
+
+You can also fill out the conf.yaml file with your public IP for basic_checks.py and API_keys you could have for typosquatFinder.py
+
 ### Using other UNIX OS than Kali
 
 If you are not using Kali Linux, feroxbuster will not be install by the script and you may need to install it manually : 
