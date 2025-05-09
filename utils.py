@@ -7,6 +7,7 @@ This program gather all useful and transverse functions
 import subprocess
 from os import devnull
 from os import environ
+import yaml 
 
 class bcolors:
     '''Class defining the colors of the prints'''
@@ -22,17 +23,19 @@ def signal_handler(sig, frame):
     clean()
     exit(0)
 
-def setvariables(keys, reset=False):
+def setvariables(reset=False):
     '''Sets API keys as variables'''
-    for _, (key, value) in enumerate(keys.items()):
-        if reset :
-            environ[key] = ''
-        else:
-            environ[key] = value
+    with open("api_keys.yaml", "r", encoding="utf-8") as config:
+        config = yaml.safe_load(config)
+        for _, (key, value) in enumerate(config["api_keys"].items()):
+            if reset :
+                environ[key] = ''
+            else:
+                environ[key] = value
     
 def clean():
     '''Unsets all API_keys on interruptions'''
-    setvariables({}, reset=True)
+    setvariables(reset=True)
 
 def printInfo(info):
     '''Special function to print some info'''
