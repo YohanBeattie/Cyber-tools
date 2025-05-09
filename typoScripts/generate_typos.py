@@ -56,10 +56,14 @@ def built_typo_domains(keywords):
     wordlist_path = "wordlist.txt"
     with open ('wordlists/tlds.txt', 'r', encoding='utf-8') as g:
         domains = []
+        tlds = g.readlines()
         with open(wordlist_path, 'w', encoding='utf-8') as f:
             for keyword in keywords:
+                if '.' in keyword:
+                    keyword = '.'.join(keyword.split('.')[:-1])
+                    tlds.append(keyword.split('.')[-1])
                 domains += generate_typos(keyword)
-            for tld in g.readlines():
+            for tld in tlds:
                 for domi in domains:
                     f.writelines(domi+tld)
                 for key_in in keywords:
