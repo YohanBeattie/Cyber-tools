@@ -57,6 +57,13 @@ A simple script opening all ips in browser on http and https page. The file can 
 python3 ./open_ip_in_browser.py -f ips.txt
 ```
 
+### Find typosquatters
+
+This script looks for typosquatters on multiple assets such as domains, Microsoft Tenants and AWS buckets. It is based on generating twisting on the domains, looking for domain with same favicon or using plateform such as GreyHatWarfare or Shodan.
+```
+python3 typosquatFinder.py -k domains.txt
+```
+
 ## Troubleshooting
 
 Most of those scripts were tested on Kali Linux and Debian. Any other OS might cause some distress. Feel free to create an issue if so.
