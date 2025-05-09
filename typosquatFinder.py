@@ -6,7 +6,8 @@ Test automatisé utils en reconnaissance externe et typosquatting
 
 import argparse
 from os.path import exists
-import sys
+from sys import stdout
+from signal import signal, SIGINT
 import traceback
 from queue import Queue
 from threading import Thread
@@ -14,7 +15,7 @@ import shlex
 from subprocess import PIPE
 import requests
 import xmltodict
-from utils import load_wordlist, printInfo, printSuccess, printError,run_cmd, printWarning
+from utils import load_wordlist, printInfo, printSuccess, printError,run_cmd, printWarning, signal_handler, setvariables
 from generate_typos import builtTypoDoms
 
 def parse():
@@ -27,7 +28,7 @@ def parse():
     parser.add_argument("-k", "--keywords", help="Keywords or domain to search for", required=True)
     parser.add_argument("-v", "--verbose", help="Add verbosity to the output", action="store_true", required=False)
     parser.add_argument("-w", "--wordlist", help="A wordlist for fuzzing on aws bucket", default="/usr/share/SecLists/Discovery/Web-Content/quickhits.txt", required=False)
-    parser.add_argument("-f", "-fuzz", help="Fuzz on aws tenants even if the bucket returns à 404 status code", action="store_true")
+    parser.add_argument("-f", "--fuzz", help="Fuzz on aws tenants even if the bucket returns à 404 status code", action="store_true")
     #parser.add_argument("-o", "--output", help="Output file", required=False)
     return parser.parse_args()
 
@@ -68,7 +69,8 @@ def fuzzing(url_list, wordlist):
     '''Fuzzing all domain aws to find files'''
     for url in url_list:
         url = shlex.quote(url)
-        ps = run_cmd(f"feroxbuster -u {url} -t 20 -C 403,500,503 -k -W 0 --silent -w {shlex.quote(wordlist)} --dont-scan soap --filter-similar-to {url} --filter-similar-to {url}/%ff/", stdout=PIPE, myprint=VERBOSE)
+        ps = run_cmd(f"feroxbuster -u {url} -t 20 -C 403,500,503 -k -W 0 --silent -w {shlex.quote(wordlist)} \
+                     --dont-scan soap --filter-similar-to {url} --filter-similar-to {url}/%ff/", stdout=PIPE, myprint=VERBOSE)
         run_cmd("awk NF ", myinput=ps.stdout, myprint=False)
 
 def fetch_aws(url):
@@ -88,7 +90,7 @@ def bucket_worker_aws():
         try:
             fetch_aws(item)
         except Exception as e:
-            traceback.print_exc(file=sys.stdout)
+            traceback.print_exc(file=stdout)
             printError(e)
         bucket_q.task_done()
 
@@ -124,7 +126,21 @@ def search_bucket_aws(keywords):
     bucket_q.join()
     return 0
 
-def searchSameFavicon(keyword):
+def searchSameFavicon(domains):
+    '''This function search for domain based on the favicon'''
+    setvariables()        
+    for domain in domains:
+        domain = shlex.quote(domain)
+        with open(f"{domain}_favicorn.out", "w", encoding='utf-8') as f:
+            run_cmd(f"python3 imports/favicorn.py --no-logo -d {domain}", stdout=f, myprint=False)
+        with open(f"{domain}_favicorn.out", "r", encoding='utf-8') as f:
+            results = f.readlines()[-1].split('/')[-1].strip()
+            if results :
+                printInfo(f"Based on the favicon, new sources were found. Please check api_responses for more details")
+                for line in results:
+                    printInfo(f"{line.strip()}")
+            else:
+                printInfo("No results with favicon search")
     return 0
 
 def searchShodanMention(keyword):
@@ -137,6 +153,7 @@ def main():
     '''Unifing all the search engines'''
     #Generating typos
     global VERBOSE
+    signal(SIGINT, signal_handler)
     args = parse()
     if exists(args.keywords): # Checks if the input is an existing file
         printInfo('Input file detected')
@@ -144,20 +161,19 @@ def main():
     else :
         printInfo('Keyword input detected')
         keywords = [args.keywords]
-    wordlist_path = builtTypoDoms(keywords=keywords)
+    #wordlist_path = builtTypoDoms(keywords=keywords)
     if VERBOSE:
         printInfo("Verbose option selected")
     VERBOSE = True if args.verbose else False
     printInfo("Searching for Microsoft Tenants")
     #search_microsoft_tenants(wordlist_path=wordlist_path)
     printInfo("Searching AWS buckets")
-    search_bucket_aws(keywords=wordlist_path)
+    #search_bucket_aws(keywords=wordlist_path)
     printInfo('Running fuzzing on all urls for AWS buckets(even 404)')
-    with open('tmp.txt', 'r', encoding='utf-8') as f:
-        tmp_url = []
-        for url in f.readlines():
-            tmp_url.append(url.strip())
-    fuzzing(url404, args.wordlist)
+    if args.fuzz:
+        fuzzing(url404, args.wordlist)
+    printInfo('Searching for new domain using favicon')
+    searchSameFavicon(domains=keywords)
     return 0
 
 
