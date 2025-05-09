@@ -136,21 +136,26 @@ def search_bucket_aws(keywords):
 def search_same_favicon(domains):
     '''This function search for domain based on the favicon'''
     utils.setvariables()
+    assets = []
     for domain in domains:
         domain = shlex.quote(domain)
         with open(f"{domain}_favicorn.out", "w", encoding='utf-8') as f:
-            utils.run_cmd(f"python3 typoScripts/favicorn.py --no-logo \
-                          -d {domain}", stdout=f, myprint=False)
+            utils.run_cmd(f"python3 typoScripts/favicorn.py --no-logo -d {domain}", stdout=f, myprint=False)
         with open(f"{domain}_favicorn.out", "r", encoding='utf-8') as g:
-            results = g.readlines()[-1].split('/')[-1].strip()
-        with open(f'{results}', 'r', encoding='utf-8') as h:
-            lines = h.readlines()
-            if len(lines):
-                utils.print_success("The favicon search reveal the following domains :")
-                for asset in lines:
-                    print(asset.strip())
-            else:
-                utils.print_warning("The favicon search did not provide any results")
+            try:
+                results = g.readlines()[-1].split('/')[-1].strip()
+                with open(f'{results}', 'r', encoding='utf-8') as h:
+                    lines = h.readlines()
+                    if len(lines):
+                        assets += lines
+                    else:
+                        utils.print_warning("The favicon search did not provide any results")
+            except IndexError:
+                utils.print_error(f'No results in reverse search favicon for {domain}')
+    if assets:
+        utils.print_success(f"The favicon search revealed the following domains :")
+        for asset in list(set(assets)):
+            print(asset.strip())
     return 0
 
 def search_shodan_mention(keywords):
@@ -178,9 +183,9 @@ def main():
         utils.print_info("Verbose option selected")
     VERBOSE = True if args.verbose else False
     utils.print_info("Searching for Microsoft Tenants")
-    search_microsoft_tenants(wordlist_path=wordlist_path)
+    #search_microsoft_tenants(wordlist_path=wordlist_path)
     utils.print_info("Searching AWS buckets")
-    search_bucket_aws(keywords=wordlist_path)
+    #search_bucket_aws(keywords=wordlist_path)
     utils.print_info('Running fuzzing on all urls for AWS buckets(even 404)')
     if args.fuzz:
         fuzzing(url404, args.wordlist)
