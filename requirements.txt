@@ -4,6 +4,7 @@ poetry
 sslcompare
 xmltodict
 tld
+requests
 #ahead requirements are need for the use of favicorn
 favicon
 netlas
@@ -27,7 +28,6 @@ markdown-it-py==3.0.0
 mdurl==0.1.2
 Pygments==2.18.0
 PyYAML==6.0.2
-requests==2.32.3
 requests-file==2.1.0
 rich==13.8.1
 soupsieve==2.6

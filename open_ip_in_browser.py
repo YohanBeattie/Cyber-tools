@@ -13,8 +13,8 @@ from utils import print_error
 def parse():
     '''This function defines the argument of our script'''
     parser = argparse.ArgumentParser(
-        prog="Open browser with all the pages",
-        description="Basically opens http and https for all IP:Port given",
+        prog="open_ip_in_browser",
+        description="Opens browser with all the pages provided over http and https",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument("-f", "--file",

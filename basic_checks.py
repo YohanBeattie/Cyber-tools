@@ -11,17 +11,16 @@ import ipaddress
 import subprocess
 import shlex
 import threading
-import yaml
 import xml.etree.ElementTree as ET
+import yaml
 from nslookup import Nslookup
 from utils import run_cmd, print_error, print_info, print_success, print_warning
-
 
 def parse():
     '''This function defines the argument of our script'''
     parser = argparse.ArgumentParser(
-        prog="Basic checks for web pentests",
-        description="Those checks include nmap, ssl and header checks & fuzzing,...",
+        prog="basic_checks",
+        description="Basic checks to start a pentest with (ssl, header, nmap, fuzzing, etc.)",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument("-f", "--scope", required=True,\

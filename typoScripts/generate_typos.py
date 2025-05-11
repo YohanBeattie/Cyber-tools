@@ -9,7 +9,7 @@ from tld.exceptions import TldDomainNotFound
 from utils import print_info
 
 def generate_typos(domain):
-    ''' Generating typos with multiple alterations'''
+    ''' Generating typos with multiple alterations (this function was stolen from the internet)'''
     try:
         tld = get_tld(f"http://{domain}", as_object=True)
         name = domain[:-(len(tld.tld) + 1)]  # remove TLD and dot
@@ -59,7 +59,7 @@ def built_typo_domains(keywords):
         tlds = g.readlines()
         with open(wordlist_path, 'w', encoding='utf-8') as f:
             for keyword in keywords:
-                if '.' in keyword:
+                if '.' in keyword: #we remove the tlds to get keywords to mess up with
                     keyword = '.'.join(keyword.split('.')[:-1])
                     tlds.append(keyword.split('.')[-1])
                 domains += generate_typos(keyword)

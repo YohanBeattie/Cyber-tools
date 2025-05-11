@@ -23,7 +23,7 @@ def parse():
         description="Looks for typosquatters using microsoft tenants, \
             aws buckets, shodan and favicorn",
     )
-    parser.add_argument("-k", "--keywords", help="Keywords or domain to search for",
+    parser.add_argument("-d", "--domains", help="Input files must contain domains or be a domain",
                         required=True)
     parser.add_argument("-v", "--verbose",
                         help="Add verbosity to the output",
@@ -33,7 +33,7 @@ def parse():
                         help="A wordlist for fuzzing on aws bucket",
                         default="/usr/share/SecLists/Discovery/Web-Content/quickhits.txt",
                         required=False)
-    parser.add_argument("-f", "--fuzz",
+    parser.add_argument("--fuzz",
                         help="Fuzz on aws tenants even if the bucket returns à 404 status code",
                         action="store_true")
     #parser.add_argument("-o", "--output", help="Output file", required=False)
@@ -192,7 +192,6 @@ def main():
     utils.print_info('Searching for new domain using favicon')
     search_same_favicon(domains=keywords)
     return 0
-
 
 if __name__=='__main__':
     main()

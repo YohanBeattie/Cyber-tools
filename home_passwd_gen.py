@@ -10,8 +10,8 @@ import argparse
 def parse():
     '''Parser for output argument'''
     parser = argparse.ArgumentParser(
-        prog="Creates a password of dictionnary based on some input words",
-        description="This script creates all permutation of given words and more",
+        prog="home_passwd_gen",
+        description="Creates a password of dictionnary based on some input words",
     )
     parser.add_argument("-o", "--output", help="Output file",
         default='output_passwd.dict', required=False)
@@ -31,7 +31,7 @@ def main():
     ####################################################################
     #Insert a sample of words in the above lists
     #It is advise to let a empty string in each list
-    words1 = ['avem', 'AVEM','Avem','']
+    words1 = ['Mon','Entreprise','']
     words2 = [ 'group', 'GROUP','']
     date = ['2022', '2023', '2024', '2025']
     spe_char = ['$', '!', '&', '=', '#', '_', '$', '']
@@ -41,7 +41,7 @@ def main():
     for element in list(itertools.permutations(spe_char, 2)):
         for word1 in words1:
             for word2 in words2:
-                new_words = [word1+word2] + ['2019']
+                new_words = [word1+word2] + ['randomezafjpemdjs']
 
                 passwd_little += [''.join(list(mypermut))
                     for mypermut in list(itertools.permutations(new_words))]
@@ -56,9 +56,9 @@ def main():
     with open(args.output, 'w', encoding='utf-8') as g:
         for password in passwd_little:
             #print(str(i) + '/'+str(len(passwd)))
-            if '2019' in password:
+            if 'randomezafjpemdjs' in password:
                 for year in date:
-                    passwd.append(password.replace('2019', year))
+                    passwd.append(password.replace('randomezafjpemdjs', year))
             for passwd_iterator in replacer('a', '@', password, 0):
                 if passwd_iterator != password:
                     g.write(passwd_iterator+'\n')
