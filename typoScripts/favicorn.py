@@ -2,7 +2,7 @@
 '''
 This function is from https://github.com/sharsil/favicorn
 Thanks @sharsil for the dev of this awesome tool
-Added a FOFA hander
+Added a FOFA & Criminal_IP handler
 '''
 
 import argparse
@@ -540,7 +540,69 @@ class FofaPreviewAPIKeyFetcher(Fetcher):
             domains = list(set(domains))
 
             return total_results_count, domains, ip_addresses_by_waf
-            
+
+class CriminalIPPreviewAPIKeyFetcher(Fetcher):
+    """Stateless fetcher for getting results from CriminalIP based on favicon hash."""
+    
+    def __init__(self, api_key, use_cache=True):
+        self.api_key = api_key
+        self.use_cache = use_cache
+
+    @classmethod
+    def get_platform(cls):
+        return 'Fofa'
+
+    def get_info(self, favicon):
+        """Fetch information from Fofa based on the favicon object using its API key."""
+        criminalip_connection = requests.session()
+        #s.get('http://httpbin.org/cookies/set/sessioncookie/123456789')
+        murmur_hash = favicon.murmur_hash
+
+        try:
+            result = None
+            if self.use_cache:
+                result =CriminalIPPreviewAPIKeyFetcher._load_response_from_file(murmur_hash)  # cached response
+
+            if not result:
+                #TBD : #####################"check type of query on criminalip ###############################""
+                header = {"x-api-key": f"{self.api_key}"}
+
+                result = criminalip_connection.get(url=f"https://api.criminalip.io/v1/asset/search?query=favicon:{self.hex_hash}&offset=0", headers=header).text 
+                CriminalIPPreviewAPIKeyFetcher._save_response_to_file(result, murmur_hash)
+            total_results_count, domains, ip_addresses_by_waf = CriminalIPPreviewAPIKeyFetcher._parse_response(json.loads(result))
+            output = CriminalIPPreviewAPIKeyFetcher._format_output(total_results_count, domains, ip_addresses_by_waf, murmur_hash, favicon.name())
+            return domains, ip_addresses_by_waf, output
+
+        except Exception as e:
+            return [], {}, f"CriminalIP API request failed: {str(e)}"
+    
+    @staticmethod
+    def _parse_response(data):
+        """Extracts the total results count, domains, and IP addresses from the response."""
+        if data["status"] == 500 :
+            raise Exception("Please check the API key provided or maybe your credit exceeded")
+        if data["status"] == 403 and data["message"] == "check access failed":
+            raise Exception("Looks like the API_KEY is missing")
+        else :
+            domains = []
+            ip_addresses_by_waf = {'No WAF': []}
+
+            total_results_count = len(data["results"])
+            for element in data["results"]:
+                site = data["results"]["element"][0]
+                port = data["results"]["element"][2]
+                if site:
+                    domains.append(f"{site}:{port}")
+
+                ip = data["results"]["element"][1]
+                if ip and not ip in ip_addresses_by_waf['No WAF']:
+                    ip_addresses_by_waf['No WAF'].append(ip)
+
+            domains = list(set(domains))
+
+            return total_results_count, domains, ip_addresses_by_waf
+        
+
 def run_fetchers(favicons, fetchers):
     """Run fetchers in parallel with a spinning progress bar and print results sequentially."""
     results = []
@@ -625,13 +687,16 @@ if __name__ == "__main__":
     SHODAN_KEY = os.getenv('SHODAN_KEY')
     NETLAS_KEY = os.getenv('NETLAS_KEY')
     FOFA_KEY = os.getenv("FOFA_KEY")
+    CRIMINALIP_KEY = os.getenv("CRIMINALIP_KEY")
 
     if SHODAN_KEY:
         fetchers.append(ShodanPreviewAPIKeyFetcher(SHODAN_KEY))
     fetchers.append(NetlasPreviewAPIKeyFetcher(NETLAS_KEY))
     if FOFA_KEY:
         fetchers.append(FofaPreviewAPIKeyFetcher(FOFA_KEY))
-
+    if CRIMINALIP_KEY:
+        fetchers.append(CriminalIPPreviewAPIKeyFetcher(CRIMINALIP_KEY))
+        
     if args.uri:
         if args.uri.count('/') >= 3 and not args.uri.endswith('/'):
             print(f"Searching by favicon from direct link {args.uri}...")
