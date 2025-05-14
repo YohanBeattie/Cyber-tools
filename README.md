@@ -11,7 +11,7 @@ Cybersecurity tools
 
 ## Tools
 
-- [Basic checks](#basic-cheks) : Does basic pentest checks : ssl, headers, fuzzing, nmap.
+- [Basic checks](#basic-checks) : Does basic pentest checks : ssl, headers, fuzzing, nmap.
 - [Generate multiple cookie bypassing anti-CSRF token](#generate-cookie-with-csrf) : gives back a list of token bypassing CSRF token (usefull for calculating entropy).
 - [Homemade Password Generator from custom wordlist](#homemade-password-generator) : Creates a password wordlist (specially for companies).
 - [Open IP in browser](#open-ip-in-browser) : Opens a list of endpoint in your browser.
@@ -64,7 +64,7 @@ python3 home_passwd_gen.py -o mycompany_pwd.dict
 
 ### Open IP in browser
 
-A simple script opening all ips in browser on http and https page. The file can contain either IPs or IP:Port. Pages are open by group of 20 :
+A simple script opening all ips in browser on http and https page. The file can contain either IPs or IP:Port or domains. Pages are open by group of 20 :
 ```
 python3 ./open_ip_in_browser.py -f ips.txt
 ```
