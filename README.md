@@ -9,6 +9,12 @@ Cybersecurity tools
 - 🛠️ [Troubleshooting](#troubleshooting)
 - 📢 [Disclaimer](#disclaimer)
 
+## Tools
+
+- [Basic checks](#basiccheks)
+- [Generate multiple cookie bypassing anti-CSRF token](#generatecookiewithcsrf)
+
+
 ## About
 
 This project is made to help pentesters or developer that wish to assess there security level. 
