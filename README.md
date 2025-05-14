@@ -67,6 +67,13 @@ This script looks for typosquatters on multiple assets such as domains, Microsof
 python3 typosquatFinder.py -k domains.txt
 ```
 
+### Test all endpoint of open project
+
+This script test all endpoint from a github project on a website : 
+```
+./lookup_gits.sh -u https://github.com/user/project.git -d project.example.com
+```
+
 ## Troubleshooting
 
 Most of those scripts were tested on Kali Linux and Debian. Any other OS might cause some distress. Feel free to create an issue if so.
