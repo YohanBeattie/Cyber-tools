@@ -11,9 +11,12 @@ Cybersecurity tools
 
 ## Tools
 
-- [Basic checks](#basiccheks)
-- [Generate multiple cookie bypassing anti-CSRF token](#generatecookiewithcsrf)
-
+- [Basic checks](#basic-cheks) : Does basic pentest checks : ssl, headers, fuzzing, nmap.
+- [Generate multiple cookie bypassing anti-CSRF token](#generate-cookie-with-csrf) : gives back a list of token bypassing CSRF token (usefull for calculating entropy).
+- [Homemade Password Generator from custom wordlist](#homemade-password-generator) : Creates a password wordlist (specially for companies).
+- [Open IP in browser](#open-ip-in-browser) : Opens a list of endpoint in your browser.
+- [Find typosquatters](#find-typosquatters) : Looks for web typosquatting on Microsoft Tenant, AWS Bucket and through the use of the same favicon.
+- [Open-source github web fuzzer](#test-all-endpoint-of-open-project) : If a website uses a opensource project from github, this tools open all the webpages accessible in your browser.
 
 ## About
 
