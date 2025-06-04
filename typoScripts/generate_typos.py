@@ -39,16 +39,29 @@ def generate_typos(domain):
 
     # Alt encodings (ASCII )
     alternatives = {'s': '5', 'l': '1', 'o': '0', 'a': '4',
-                    'e': '3', 'i': '1', 't': '7', '@':'a', '!':'1'}
-    for i, c in enumerate(name):
-        if c.lower() in alternatives:
-            typos.append(name[:i] + alternatives[c.lower()] + name[i+1:])
-
+                    'e': '3', 'i': '1', '@':'a',
+                    '!':'1'} 
+    alternatives_cyrillic = { 'a':'а', 'c':'с', 'd':'ԁ',
+                    'e':'е', 'h':'һ', 'i':'і', 'j':'ј',
+                    'k':'ҟ', 'l':'ӏ', 'm':'м', 'n':'п',
+                    'o':'о', 'p':'р', 'q':'ԛ', 'r':'г',
+                    's':'ѕ', 'u':'џ', 'w':'ԝ', 'x':'х', 'y':'у'}
+    
+    typos += create_alternatives(name, alternatives)
+    typos += create_alternatives(name, alternatives_cyrillic)
+    
     # Add the TLD back
     if tld:
         return [f"{typo}.{tld}" for typo in set(typos)]
     else:
         return list(set(typos))
+
+def create_alternatives(word, alternative):
+    '''Creates variation in words (replace a by @ or latin letters by there cyrillic equivalent)'''
+    for i, c in enumerate(word):
+        if c.lower() in alternative:
+            new_word = word[:i] + alternative[c.lower()] + word[i+1:]
+            return [new_word]+create_alternatives(new_word, alternative)
 
 def built_typo_domains(keywords):
     '''Main function using the input keywords and a list of common tlds'''
