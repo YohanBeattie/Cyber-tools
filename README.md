@@ -9,6 +9,15 @@ Cybersecurity tools
 - 🛠️ [Troubleshooting](#troubleshooting)
 - 📢 [Disclaimer](#disclaimer)
 
+## Tools
+
+- [Basic checks](#basic-checks) : Does basic pentest checks : ssl, headers, fuzzing, nmap.
+- [Generate multiple cookie bypassing anti-CSRF token](#generate-cookie-with-csrf) : gives back a list of token bypassing CSRF token (usefull for calculating entropy).
+- [Homemade Password Generator from custom wordlist](#homemade-password-generator) : Creates a password wordlist (specially for companies).
+- [Open IP in browser](#open-ip-in-browser) : Opens a list of endpoint in your browser.
+- [Find typosquatters](#find-typosquatters) : Looks for web typosquatting on Microsoft Tenant, AWS Bucket and through the use of the same favicon.
+- [Open-source github web fuzzer](#test-all-endpoint-of-open-project) : If a website uses a opensource project from github, this tools open all the webpages accessible in your browser.
+
 ## About
 
 This project is made to help pentesters or developer that wish to assess there security level. 
@@ -19,6 +28,9 @@ chmod +x install.sh
 ./install.sh
 source ./venv/bin/activate
 ```
+
+You can also fill out the conf.yaml file with your public IP for basic_checks.py and API_keys you could have for typosquatFinder.py
+
 ### Using other UNIX OS than Kali
 
 If you are not using Kali Linux, feroxbuster will not be install by the script and you may need to install it manually : 
@@ -52,7 +64,7 @@ python3 home_passwd_gen.py -o mycompany_pwd.dict
 
 ### Open IP in browser
 
-A simple script opening all ips in browser on http and https page. The file can contain either IPs or IP:Port. Pages are open by group of 20 :
+A simple script opening all ips in browser on http and https page. The file can contain either IPs or IP:Port or domains. Pages are open by group of 20 :
 ```
 python3 ./open_ip_in_browser.py -f ips.txt
 ```
@@ -62,6 +74,13 @@ python3 ./open_ip_in_browser.py -f ips.txt
 This script looks for typosquatters on multiple assets such as domains, Microsoft Tenants and AWS buckets. It is based on generating twisting on the domains, looking for domain with same favicon or using plateform such as GreyHatWarfare or Shodan.
 ```
 python3 typosquatFinder.py -k domains.txt
+```
+
+### Test all endpoint of open project
+
+This script test all endpoint from a github project on a website : 
+```
+./lookup_gits.sh -u https://github.com/user/project.git -d project.example.com
 ```
 
 ## Troubleshooting
