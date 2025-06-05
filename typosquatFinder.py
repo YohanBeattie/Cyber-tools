@@ -2,6 +2,7 @@
 '''
 Tests automatisés pour de la reconnaissance externe et recherche de typosquatting
 @authors ybeattie
+TODO : add loading bar on Tenants, Buckets, and favicon ?
 '''
 
 import argparse
@@ -13,13 +14,14 @@ import shlex
 from subprocess import PIPE
 import requests
 import xmltodict
+from rich.progress import Progress
 import utils
 from typoScripts.generate_typos import built_typo_domains
 
 def parse():
     '''This function defines the argument of our script'''
     parser = argparse.ArgumentParser(
-        prog="typosquatFinder",
+        prog=" typosquat_finder",
         description="Looks for typosquatters using microsoft tenants, \
             aws buckets, shodan and favicorn",
     )
@@ -36,6 +38,9 @@ def parse():
     parser.add_argument("--fuzz",
                         help="Fuzz on aws tenants even if the bucket returns à 404 status code",
                         action="store_true")
+    parser.add_argument("--t", "threads",
+                        help="Defines the number of threads",
+                        default=5, type=int)
     #parser.add_argument("-o", "--output", help="Output file", required=False)
     return parser.parse_args()
 
@@ -117,21 +122,31 @@ def status200_aws(response, line):
         pass
     utils.print_info(f"Found keys : {str(keys)}")
 
-def search_bucket_aws(keywords):
+def thread_work(my_function, domains_file, thread_number):
+    '''Used to speed up function run using urls'''
+    for _ in range(0, thread_number): 
+        t = Thread(target=my_function)
+        t.daemon = True
+        t.start()
+    with open(domains_file, 'r', encoding='utf-8') as f:
+        with Progress() as p:
+            t = p.add_task("Processing...", total=len(f.readlines()))   
+            for line in f.readlines():
+                bucket_q.put(line.rstrip())
+                p.update(t, advance=1)
+    bucket_q.join()
+    return 0
+
+def search_bucket_aws(keywordsfile, thread_number):
     '''AWS main function looking for AWS buckets'''
     utils.print_info('Buckets will not be downloaded')
     # start up bucket workers
-    for _ in range(0, 5): # 5 being the number of thread
-        t = Thread(target=bucket_worker_aws)
-        t.daemon = True
-        t.start()
-
-    with open(keywords, 'r', encoding='utf-8') as f:
-        for line in f:
-            bucket = 'http://'+line.rstrip()+'.s3.amazonaws.com'
-            bucket_q.put(bucket)
-    bucket_q.join()
-    return 0
+    urls_path = "tmp/aws_urls.txt"
+    with open(urls_path, 'w', encoding='utf-8') as aws_urls:
+        with open(keywordsfile, 'r', encoding='utf-8') as f:
+            for line in f.readlines():
+                aws_urls.write('http://'+line.rstrip()+'.s3.amazonaws.com')
+    thread_work(bucket_worker_aws, urls_path, thread_number)
 
 def search_same_favicon(domains):
     '''This function search for domain based on the favicon'''
@@ -139,24 +154,49 @@ def search_same_favicon(domains):
     assets = []
     for domain in domains:
         domain = shlex.quote(domain)
-        with open(f"{domain}_favicorn.out", "w", encoding='utf-8') as f:
-            utils.run_cmd(f"python3 typoScripts/favicorn.py --no-logo -d {domain}", stdout=f, myprint=False)
-        with open(f"{domain}_favicorn.out", "r", encoding='utf-8') as g:
+        fav_file = f"tmp/{domain}_favicorn.out"
+        with open(fav_file, "w", encoding='utf-8') as f:
+            utils.run_cmd(f"python3 typoScripts/favicorn.py --no-logo -d {domain}", stdout=f)
+        with open(fav_file, "r", encoding='utf-8') as g:
             try:
                 results = g.readlines()[-1].split('/')[-1].strip()
-                with open(f'{results}', 'r', encoding='utf-8') as h:
-                    lines = h.readlines()
-                    if len(lines):
-                        assets += lines
-                    else:
-                        utils.print_warning("The favicon search did not provide any results")
+                if "ICO file of favicon" in results:
+                    utils.print_warning(f"No favicon could be extracted for {domain}")
+                else:
+                    with open(f'{results}', 'r', encoding='utf-8') as h:
+                        lines = h.readlines()
+                        if len(lines):
+                            assets += lines
+                        else:
+                            utils.print_warning("The favicon search did not provide any results")
             except IndexError:
                 utils.print_error(f'No results in reverse search favicon for {domain}')
     if assets:
-        utils.print_success(f"The favicon search revealed the following domains :")
-        for asset in list(set(assets)):
-            print(asset.strip())
+        utils.print_success("The favicon search revealed the following domains :")
+        with open('favicon.domains', 'a', encoding='utf-8') as f:
+            for asset in list(set(assets)):
+                print(asset.strip())
+                f.write(asset.strip())
     return 0
+
+def check_website(domain):
+    '''Checks if a typosquatted domain exists'''
+    try:
+        r = requests.get(domain, timeout=10)
+        utils.print_success(f"A similar website was found : {domain} (status:{r.status_code})")
+    except requests.exceptions.ConnectionError:
+        pass
+    except requests.exceptions.ReadTimeout:
+        utils.print_info(f"Connection timeout on {domain}")
+
+def check_websites(domainsfile, thread_number):
+    '''Check if typosquatting website are up'''
+    urls_path = "out/website_typosquat.txt"
+    with open(domainsfile, 'r', encoding='utf-8') as domains:
+        with open(urls_path, "w", encoding="utf-8") as f:
+            for domain in domains.readlines():
+                f.write('http://'+domain.strip())
+    thread_work(check_website, urls_path, thread_number=thread_number)
 
 def search_shodan_mention(keywords):
     ''' Using shodan to find results on typosquatters'''
@@ -172,25 +212,27 @@ def main():
     global VERBOSE
     signal(SIGINT, utils.signal_handler)
     args = parse()
-    if exists(args.keywords): # Checks if the input is an existing file
+    if exists(args.domains): # Checks if the input is an existing file
         utils.print_info('Input file detected')
-        keywords = utils.load_wordlist(args.keywords)
+        keywords = utils.load_wordlist(args.domains)
     else :
         utils.print_info('Keyword input detected')
-        keywords = [args.keywords]
+        keywords = [args.domains]
     wordlist_path = built_typo_domains(keywords=keywords)
+    check_websites(domainsfile=wordlist_path, thread_number=args.threads)
     if VERBOSE:
         utils.print_info("Verbose option selected")
     VERBOSE = True if args.verbose else False
     utils.print_info("Searching for Microsoft Tenants")
-    #search_microsoft_tenants(wordlist_path=wordlist_path)
+    search_microsoft_tenants(wordlist_path=wordlist_path)
     utils.print_info("Searching AWS buckets")
-    #search_bucket_aws(keywords=wordlist_path)
-    utils.print_info('Running fuzzing on all urls for AWS buckets(even 404)')
+    search_bucket_aws(keywordsfile=keywords, thread_number=args.treads)
     if args.fuzz:
+        utils.print_info('Running fuzzing on all urls for AWS buckets(even 404)')
         fuzzing(url404, args.wordlist)
     utils.print_info('Searching for new domain using favicon')
     search_same_favicon(domains=keywords)
+    utils.print_info('All new domains were append to the file favicon.domains')
     return 0
 
 if __name__=='__main__':
