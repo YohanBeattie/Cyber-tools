@@ -5,6 +5,7 @@ sslcompare
 xmltodict
 tld
 requests
+rich
 #ahead requirements are need for the use of favicorn
 favicon
 netlas
