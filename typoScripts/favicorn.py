@@ -13,10 +13,8 @@ import io
 import json
 import mimetypes
 import os
-import random
 import re
 import sys
-import time
 from contextlib import closing
 # tinyurl
 from urllib.parse import urlencode
@@ -52,35 +50,6 @@ def clear_terminal():
 
 def print_ascii_art():
     clear_terminal()
-    ascii_art = [['\033[33m+\033[0m' if char == '+' else '\033[1;35m' + char + '\033[0m' for char in line.ljust(45)]
-                 for line in r"""             +           +              
-                                  +         
-             +     /                   +    
-                  /       +                 
-                 +                  +       
-          +                ,               +
-                          /|                
-                \        / ->         \     
-        +        \,_    /  ->     +    \    
-                 /0(``  \  ->           \   
-                (, /"(``-\_/_--_         +  
-                      \ )___(  )\\.         
-                      |/     \/  \\\        
-                      \\     /\             
-                      o o   o  o            
-                                            """.split("\n")]
-    dim_x, dim_y = len(ascii_art[0]), len(ascii_art)
-    mask = [['O' for _ in range(dim_x)] for _ in range(dim_y)]
-    available_positions = [(y, x) for y in range(dim_y) for x in range(dim_x)]
-    while available_positions:
-        for _ in ascii_art:
-            print("\033[F", end='')
-        y, x = random.choice(available_positions)
-        available_positions.remove((y, x))
-        mask[y][x] = 0
-        for dy, line in enumerate(ascii_art):
-            print(''.join(mask[dy][dx] or line[dx] for dx in range(dim_x)), flush=os.name != 'nt')
-        time.sleep(0.001)
 
 class Favicon:
     def __init__(self, content, source=None, type=None, tinyurl=False):
@@ -503,12 +472,13 @@ class FofaPreviewAPIKeyFetcher(Fetcher):
         murmur_hash = favicon.murmur_hash
 
         try:
-            result = None
+            print("fofa1")
             if self.use_cache:
                 result = FofaPreviewAPIKeyFetcher._load_response_from_file(murmur_hash)  # cached response
 
             if not result:
                 result = fofa_connection.get(url=f"https://fofa.info/api/v1/search/all?key={self.api_key}&qbase64={favicon.base64_hash}").text
+                
                 FofaPreviewAPIKeyFetcher._save_response_to_file(result, murmur_hash)
             total_results_count, domains, ip_addresses_by_waf = FofaPreviewAPIKeyFetcher._parse_response(json.loads(result))
             output = FofaPreviewAPIKeyFetcher._format_output(total_results_count, domains, ip_addresses_by_waf, murmur_hash, favicon.name())
@@ -562,19 +532,24 @@ class CriminalIPPreviewAPIKeyFetcher(Fetcher):
             result = None
             if self.use_cache:
                 result =CriminalIPPreviewAPIKeyFetcher._load_response_from_file(murmur_hash)  # cached response
-
+            print(f"Checking on https://api.criminalip.io/v1/asset/search?query=favicon:{favicon.hex_hash} with the api-key")
             if not result:
                 #TBD : #####################"check type of query on criminalip ###############################""
                 header = {"x-api-key": f"{self.api_key}"}
-
-                result = criminalip_connection.get(url=f"https://api.criminalip.io/v1/asset/search?query=favicon:{self.hex_hash}&offset=0", headers=header).text 
+                print('gol541')
+                result = criminalip_connection.get(url=f"https://api.criminalip.io/v1/asset/search?query=favicon:{favicon.hex_hash}", headers=header).text 
+                print(f"CriminalIP : {result}")
+                print('gol544')
                 CriminalIPPreviewAPIKeyFetcher._save_response_to_file(result, murmur_hash)
+            print(json.loads(result))
             total_results_count, domains, ip_addresses_by_waf = CriminalIPPreviewAPIKeyFetcher._parse_response(json.loads(result))
+            print('gol548')
             output = CriminalIPPreviewAPIKeyFetcher._format_output(total_results_count, domains, ip_addresses_by_waf, murmur_hash, favicon.name())
+            print('gol550')
             return domains, ip_addresses_by_waf, output
 
         except Exception as e:
-            return [], {}, f"CriminalIP API request failed: {str(e)}"
+            return [], {}, f"CriminalIP API request failed: {e}"
     
     @staticmethod
     def _parse_response(data):
@@ -602,24 +577,25 @@ class CriminalIPPreviewAPIKeyFetcher(Fetcher):
 
             return total_results_count, domains, ip_addresses_by_waf
         
-
+#removed concurrente request on one plateform (still doing the fetchers in parallel)
 def run_fetchers(favicons, fetchers):
     """Run fetchers in parallel with a spinning progress bar and print results sequentially."""
     results = []
 
     # Prepare a list of tasks (fetchers for each favicon)
     tasks = [(fetcher, favicon) for favicon in favicons for fetcher in fetchers]
+    
+    with alive_bar(len(fetchers), title="Fetching some results...") as bar:
+        for favicon in favicons :
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                futures = [executor.submit(fetcher.get_info, favicon) for fetcher in fetchers]
 
-    with alive_bar(len(tasks), title="Fetching some results...") as bar:
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [executor.submit(fetcher.get_info, favicon) for fetcher, favicon in tasks]
-
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    results.append(future.result())
-                except Exception as e:
-                    results.append(([], {}, f"Error occurred: {e}"))
-                bar()  # Update the progress bar
+                for future in concurrent.futures.as_completed(futures):
+                    try:
+                        results.append(future.result())
+                    except Exception as e:
+                        results.append(([], {}, f"Error occurred: {e}"))
+                    bar()  # Update the progress bar
 
     return results
 
@@ -696,7 +672,7 @@ if __name__ == "__main__":
         fetchers.append(FofaPreviewAPIKeyFetcher(FOFA_KEY))
     if CRIMINALIP_KEY:
         fetchers.append(CriminalIPPreviewAPIKeyFetcher(CRIMINALIP_KEY))
-        
+
     if args.uri:
         if args.uri.count('/') >= 3 and not args.uri.endswith('/'):
             print(f"Searching by favicon from direct link {args.uri}...")
@@ -799,7 +775,7 @@ if __name__ == "__main__":
             if preview_results:
                 filename = f'{favicon.murmur_hash}{PREVIEW_FILE}'.replace('-', '_')
                 path = os.path.join(OUTPUT_DIR, filename)
-                with open(filename, 'w', encoding='utf-8') as file:
+                with open(path, 'w', encoding='utf-8') as file:
                     file.write('\n'.join(preview_results))
                     print(f'{Fore.GREEN}Preview results for favicon \
                           with MurmurHash {favicon.murmur_hash} saved to {path}')
