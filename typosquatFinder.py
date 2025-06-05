@@ -39,7 +39,7 @@ def parse():
                         action="store_true")
     parser.add_argument("-t", "--threads",
                         help="Defines the number of threads",
-                        default=5, type=int)
+                        default=15, type=int)
     #parser.add_argument("-o", "--output", help="Output file", required=False)
     return parser.parse_args()
 
@@ -59,7 +59,6 @@ def check_tenant_exists(tenant_name):
 
 def search_microsoft_tenants(wordlist_path):
     '''This function checks if a corresponding tenants exists for each domain given'''
-    utils.print_info("Searching for Micorosft Tenants' typosquatters")
     tenants = utils.load_wordlist(wordlist_path)
     utils.print_info(f"🕵️ Checking on {len(tenants)} tenants...\n")
     for tenant in tenants:
@@ -192,7 +191,11 @@ def check_website(domain):
     '''Checks if a typosquatted domain exists'''
     try:
         r = requests.get(domain, timeout=10)
-        utils.print_success(f"A similar website was found : {domain} (status:{r.status_code})")
+        if set(domain).isdisjoint('асԁеһіјҟӏмпорԛгѕџԝху'):
+            is_cyrillic = '' 
+        else:
+            is_cyrillic = '-> ⚠️ This domain name contains cyrillic characters'
+        utils.print_success(f"A similar website was found : {domain} (status:{r.status_code}) {is_cyrillic}")
     except requests.exceptions.ConnectionError:
         if VERBOSE:
             utils.print_warning(f"ConnectionError (probably du to inexistant domain) on : {domain}")
@@ -231,19 +234,20 @@ def main():
         keywords = [args.domains]
     threads = args.threads
     wordlist_path = built_typo_domains(keywords=keywords)
+    utils.print_info("Searching for website with similar names")
     check_websites(domainsfile=wordlist_path, thread_number=threads)
     if VERBOSE:
         utils.print_info("Verbose option selected")
     VERBOSE = True if args.verbose else False
     utils.print_info("Searching for Microsoft Tenants")
-    #search_microsoft_tenants(wordlist_path=wordlist_path)
+    search_microsoft_tenants(wordlist_path=wordlist_path)
     utils.print_info("Searching AWS buckets")
-    #search_bucket_aws(keywords_list=keywords, thread_number=threads)
+    search_bucket_aws(keywords_list=keywords, thread_number=threads)
     if args.fuzz:
         utils.print_info('Running fuzzing on all urls for AWS buckets(even 404)')
         fuzzing(url404, args.wordlist)
     utils.print_info('Searching for new domain using favicon')
-     #search_same_favicon(domains=keywords)
+    search_same_favicon(domains=keywords)
     utils.print_info('All new domains were append to the file favicon.domains')
     exit(1)
     return 0
