@@ -38,30 +38,30 @@ def generate_typos(domain):
         typos.append(name[:i] + name[i+1] + name[i] + name[i+2:])
 
     # Alt encodings (ASCII )
-    alternatives = {'s': '5', 'l': '1', 'o': '0', 'a': '4',
-                    'e': '3', 'i': '1', '@':'a',
-                    '!':'1'} 
+    alternatives = {'s': '5', 'l': '1', 'o': '0', 'a': '4','e': '3', 'i': '1', '@':'a','!':'1'} 
     alternatives_cyrillic = { 'a':'а', 'c':'с', 'd':'ԁ',
                     'e':'е', 'h':'һ', 'i':'і', 'j':'ј',
                     'k':'ҟ', 'l':'ӏ', 'm':'м', 'n':'п',
                     'o':'о', 'p':'р', 'q':'ԛ', 'r':'г',
                     's':'ѕ', 'u':'џ', 'w':'ԝ', 'x':'х', 'y':'у'}
-    
+
     typos += create_alternatives(name, alternatives)
     typos += create_alternatives(name, alternatives_cyrillic)
-    
     # Add the TLD back
     if tld:
         return [f"{typo}.{tld}" for typo in set(typos)]
     else:
         return list(set(typos))
 
-def create_alternatives(word, alternative):
+def create_alternatives(word, alternative, min_index=0):
     '''Creates variation in words (replace a by @ or latin letters by there cyrillic equivalent)'''
-    for i, c in enumerate(word):
-        if c.lower() in alternative:
-            new_word = word[:i] + alternative[c.lower()] + word[i+1:]
-            return [new_word]+create_alternatives(new_word, alternative)
+    if min_index > len(word):
+        return []
+    for index, letter in enumerate(word):
+        if index >= min_index and letter.lower() in alternative:
+            new_word = word[:index] + alternative[letter.lower()] + word[index+1:]
+            return [new_word]+create_alternatives(new_word, alternative, index+1)+create_alternatives(word, alternative, index+1)
+    return []
 
 def built_typo_domains(keywords):
     '''Main function using the input keywords and a list of common tlds'''
@@ -73,12 +73,11 @@ def built_typo_domains(keywords):
         with open(wordlist_path, 'w', encoding='utf-8') as f:
             for keyword in keywords:
                 if '.' in keyword: #we remove the tlds to get keywords to mess up with
+                    tlds.append('.'+keyword.rsplit('.', maxsplit=1)[-1]+'\n')
                     keyword = '.'.join(keyword.split('.')[:-1])
-                    tlds.append(keyword.split('.')[-1])
                 domains += generate_typos(keyword)
-            for tld in tlds:
-                for domi in domains:
-                    f.writelines(domi+tld)
-                for key_in in keywords:
-                    f.write(key_in+ tld)
+            for tld in list(set(tlds)):
+                for domi in list(set(domains)):
+                    f.write(domi+tld)
+            f.writelines(keyword+'\n' for keyword in keywords)
     return wordlist_path
