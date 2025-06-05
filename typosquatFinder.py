@@ -9,12 +9,11 @@ import argparse
 from os.path import exists
 from signal import signal, SIGINT
 from queue import Queue
-from threading import Thread
+from threading import Thread, Lock
 import shlex
 from subprocess import PIPE
 import requests
 import xmltodict
-from rich.progress import Progress
 import utils
 from typoScripts.generate_typos import built_typo_domains
 
@@ -38,7 +37,7 @@ def parse():
     parser.add_argument("--fuzz",
                         help="Fuzz on aws tenants even if the bucket returns à 404 status code",
                         action="store_true")
-    parser.add_argument("--t", "threads",
+    parser.add_argument("-t", "--threads",
                         help="Defines the number of threads",
                         default=5, type=int)
     #parser.add_argument("-o", "--output", help="Output file", required=False)
@@ -73,7 +72,7 @@ def search_microsoft_tenants(wordlist_path):
     return 0
 
 bucket_q = Queue()
-download_q = Queue()
+progress_lock = Lock()
 url404 = []
 VERBOSE = False
 
@@ -104,8 +103,10 @@ def bucket_worker_aws():
     '''Creating a bucket working'''
     while True:
         item = bucket_q.get()
-        fetch_aws(item)
-        bucket_q.task_done()
+        try :
+            fetch_aws(item)
+        finally:
+            bucket_q.task_done()
 
 def status200_aws(response, line):
     '''Function called when a bucket is existing. Checks keys'''
@@ -124,28 +125,27 @@ def status200_aws(response, line):
 
 def thread_work(my_function, domains_file, thread_number):
     '''Used to speed up function run using urls'''
-    for _ in range(0, thread_number): 
-        t = Thread(target=my_function)
-        t.daemon = True
-        t.start()
     with open(domains_file, 'r', encoding='utf-8') as f:
-        with Progress() as p:
-            t = p.add_task("Processing...", total=len(f.readlines()))   
-            for line in f.readlines():
-                bucket_q.put(line.rstrip())
-                p.update(t, advance=1)
+        lines = f.readlines()
+        for _ in range(0, thread_number):
+            t = Thread(target=my_function)
+            #t.daemon = True
+            t.start()
+        for line in lines:
+            bucket_q.put(line.rstrip())
     bucket_q.join()
+    with bucket_q.mutex:
+        bucket_q.queue.clear()
     return 0
 
-def search_bucket_aws(keywordsfile, thread_number):
+def search_bucket_aws(keywords_list, thread_number):
     '''AWS main function looking for AWS buckets'''
     utils.print_info('Buckets will not be downloaded')
     # start up bucket workers
     urls_path = "tmp/aws_urls.txt"
     with open(urls_path, 'w', encoding='utf-8') as aws_urls:
-        with open(keywordsfile, 'r', encoding='utf-8') as f:
-            for line in f.readlines():
-                aws_urls.write('http://'+line.rstrip()+'.s3.amazonaws.com')
+        for line in keywords_list:
+            aws_urls.write('http://'+line.rstrip()+'.s3.amazonaws.com')
     thread_work(bucket_worker_aws, urls_path, thread_number)
 
 def search_same_favicon(domains):
@@ -159,7 +159,7 @@ def search_same_favicon(domains):
             utils.run_cmd(f"python3 typoScripts/favicorn.py --no-logo -d {domain}", stdout=f)
         with open(fav_file, "r", encoding='utf-8') as g:
             try:
-                results = g.readlines()[-1].split('/')[-1].strip()
+                results = 'api_responses/'+g.readlines()[-1].split('/')[-1].strip()
                 if "ICO file of favicon" in results:
                     utils.print_warning(f"No favicon could be extracted for {domain}")
                 else:
@@ -179,24 +179,35 @@ def search_same_favicon(domains):
                 f.write(asset.strip())
     return 0
 
+def check_website_worker():
+    '''Creating a website working'''
+    while True:
+        item = bucket_q.get()
+        try :
+            check_website(item)
+        finally:
+            bucket_q.task_done()
+
 def check_website(domain):
     '''Checks if a typosquatted domain exists'''
     try:
         r = requests.get(domain, timeout=10)
         utils.print_success(f"A similar website was found : {domain} (status:{r.status_code})")
     except requests.exceptions.ConnectionError:
-        pass
+        if VERBOSE:
+            utils.print_warning(f"ConnectionError (probably du to inexistant domain) on : {domain}")
     except requests.exceptions.ReadTimeout:
-        utils.print_info(f"Connection timeout on {domain}")
+        if VERBOSE:
+            utils.print_warning(f"Connection timeout on {domain}")
 
 def check_websites(domainsfile, thread_number):
     '''Check if typosquatting website are up'''
-    urls_path = "out/website_typosquat.txt"
+    urls_path = "tmp/website_typosquat.txt"
     with open(domainsfile, 'r', encoding='utf-8') as domains:
         with open(urls_path, "w", encoding="utf-8") as f:
             for domain in domains.readlines():
-                f.write('http://'+domain.strip())
-    thread_work(check_website, urls_path, thread_number=thread_number)
+                f.write('http://'+domain.strip()+'\n')
+    thread_work(check_website_worker, urls_path, thread_number=thread_number)
 
 def search_shodan_mention(keywords):
     ''' Using shodan to find results on typosquatters'''
@@ -218,21 +229,23 @@ def main():
     else :
         utils.print_info('Keyword input detected')
         keywords = [args.domains]
+    threads = args.threads
     wordlist_path = built_typo_domains(keywords=keywords)
-    check_websites(domainsfile=wordlist_path, thread_number=args.threads)
+    check_websites(domainsfile=wordlist_path, thread_number=threads)
     if VERBOSE:
         utils.print_info("Verbose option selected")
     VERBOSE = True if args.verbose else False
     utils.print_info("Searching for Microsoft Tenants")
-    search_microsoft_tenants(wordlist_path=wordlist_path)
+    #search_microsoft_tenants(wordlist_path=wordlist_path)
     utils.print_info("Searching AWS buckets")
-    search_bucket_aws(keywordsfile=keywords, thread_number=args.treads)
+    #search_bucket_aws(keywords_list=keywords, thread_number=threads)
     if args.fuzz:
         utils.print_info('Running fuzzing on all urls for AWS buckets(even 404)')
         fuzzing(url404, args.wordlist)
     utils.print_info('Searching for new domain using favicon')
-    search_same_favicon(domains=keywords)
+     #search_same_favicon(domains=keywords)
     utils.print_info('All new domains were append to the file favicon.domains')
+    exit(1)
     return 0
 
 if __name__=='__main__':

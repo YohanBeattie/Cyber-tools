@@ -66,7 +66,7 @@ def create_alternatives(word, alternative, min_index=0):
 def built_typo_domains(keywords):
     '''Main function using the input keywords and a list of common tlds'''
     print_info("Building typos...")
-    wordlist_path = "wordlist.txt"
+    wordlist_path = "tmp/wordlist.txt"
     with open ('wordlists/tlds.txt', 'r', encoding='utf-8') as g:
         domains = []
         tlds = g.readlines()
