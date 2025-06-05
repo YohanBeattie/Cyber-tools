@@ -1,3 +1,7 @@
 .venv_cyber_tools/
 venv/
 scope.txt
+tmp/
+typoScripts/__pycache__/
+__pycache__/
+api_responses/
