@@ -536,10 +536,8 @@ class CriminalIPPreviewAPIKeyFetcher(Fetcher):
             if not result:
                 #TBD : #####################"check type of query on criminalip ###############################""
                 header = {"x-api-key": f"{self.api_key}"}
-                print('gol541')
                 result = criminalip_connection.get(url=f"https://api.criminalip.io/v1/asset/search?query=favicon:{favicon.hex_hash}", headers=header).text 
                 print(f"CriminalIP : {result}")
-                print('gol544')
                 CriminalIPPreviewAPIKeyFetcher._save_response_to_file(result, murmur_hash)
             print(json.loads(result))
             total_results_count, domains, ip_addresses_by_waf = CriminalIPPreviewAPIKeyFetcher._parse_response(json.loads(result))
