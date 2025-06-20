@@ -33,10 +33,19 @@ def parse():
                         required=False,
                         action="store_true")
     parser.add_argument("-t", "--timeout",
-                        help="timeout for get requests",
+                        help="Timeout for get requests",
                         default=3,
                         required=False,
                         type=int)
+    parser.add_argument("--proxies",
+                        help="Add a proxy (--proxies 'http://127.0.0.1:8080,https://127.0.0.1:8080')",
+                        required=False,
+                        type=str)
+    parser.add_argument("-H", "--headers",
+                        help="Add a custom header (-H 'Authorization: Bearer ey...'). Header can be used multiple times",
+                        nargs=1,
+                        required=False,
+                        type=str)
     #parser.add_argument("-o", "--output", help="Output file", required=False)
     return parser.parse_args()
 
@@ -47,15 +56,28 @@ def open_urls(urls, args):
     else :
         filtered_status = []
     nbr_pages = args.simultaneous_pages
-    header = {}
+    headers = {}
     with open("wordlists/useragents.txt", 'r', encoding="utf-8") as f:
         if args.random_useragent :
-            user_agent_list = f.readlines()[random.randint(0, len(user_agent_list)-1)]
-            header={"User-Agent": user_agent_list.strip()}
+            lines = f.readlines()
+            rand = random.randint(0, len(lines)-1)
+            user_agent_list = lines[rand]
+            headers["User-Agent"] =user_agent_list.strip()
+    if args.headers:
+        try:
+            for header in args.headers:
+                headers[header.split(':')[0].strip()] = header.split(':')[1].strip()
+        except IndexError:
+            print_error("The headers you provided do not have the correct format")
+    proxies = {}
+    if args.proxies:
+        proxy = args.proxies.split(',')
+        for prox in proxy:
+            proxies[prox.split('://')[0].strip()] = prox.strip()
     for url_id,url in enumerate(urls) :
         if url_id < nbr_pages:
             try:
-                status = requests.get(url, timeout=int(args.timeout), headers=header).status_code
+                status = requests.get(url, timeout=int(args.timeout), headers=headers, proxies=proxies).status_code
                 if status not in filtered_status:
                     webbrowser.open(url, new=2)
             except requests.exceptions.InvalidURL:
@@ -64,7 +86,7 @@ def open_urls(urls, args):
                 print_error(f"Timeout for {url}")
                 continue
             except requests.exceptions.ConnectionError: #Typiquement requetes https sur un port 80
-                #print_error(f"Connection Error for {url}")
+                print_error(f"Connection Error for {url}")
                 continue
             except requests.exceptions.RetryError:
                 print_error(f"MaxRetry Error for {url}")
@@ -80,8 +102,14 @@ def main():
     args = parse()
     with open(args.file, 'r', encoding='utf-8') as f:
         ip_ports = [line.strip() for line in f.readlines()]
-        urls = ["https://"+ip_port for ip_port in ip_ports]\
-            +["http://"+ip_port for ip_port in ip_ports]
+        urls = []
+        for endpoint in ip_ports:
+            if endpoint.startswith('http'):
+                urls.append(endpoint)
+            else:
+                urls.append(f"https://{endpoint}")
+                urls.append(f"http://{endpoint}")
+          # +["https://"+ip_port for ip_port in ip_ports]
         open_urls(urls=urls, args=args)
         print("END")
 
