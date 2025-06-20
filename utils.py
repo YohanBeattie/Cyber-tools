@@ -21,6 +21,7 @@ def signal_handler():
     '''Catch user interruption and cleans before stopping'''
     print('You pressed Ctrl+C, cleaning...')
     clean()
+    print('Exiting...')
     exit(0)
 
 def setvariables(reset=False):
