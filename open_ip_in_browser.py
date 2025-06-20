@@ -38,7 +38,7 @@ def parse():
                         required=False,
                         type=int)
     parser.add_argument("--proxies",
-                        help="Add a proxy (--proxies 'http://127.0.0.1:8080,https://127.0.0.1:8080')",
+                        help="Add a proxy (--proxies 'http://127.0.0.1:8080,https://127.0.0.1:8080'). The webbrowser pages will not go through proxy.",
                         required=False,
                         type=str)
     parser.add_argument("-H", "--headers",
@@ -109,7 +109,6 @@ def main():
             else:
                 urls.append(f"https://{endpoint}")
                 urls.append(f"http://{endpoint}")
-          # +["https://"+ip_port for ip_port in ip_ports]
         open_urls(urls=urls, args=args)
         print("END")
 
