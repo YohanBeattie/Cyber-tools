@@ -53,6 +53,7 @@ def open_urls(urls, args):
     '''This function opens a list of url in your favorite browser'''
     if args.filter_status:
         filtered_status = args.filter_status.split(',')
+        print(filtered_status)
     else :
         filtered_status = []
     nbr_pages = args.simultaneous_pages
@@ -78,7 +79,7 @@ def open_urls(urls, args):
         if url_id < nbr_pages:
             try:
                 status = requests.get(url, timeout=int(args.timeout), headers=headers, proxies=proxies).status_code
-                if status not in filtered_status:
+                if str(status) not in filtered_status:
                     webbrowser.open(url, new=2)
             except requests.exceptions.InvalidURL:
                 continue
@@ -91,6 +92,9 @@ def open_urls(urls, args):
             except requests.exceptions.RetryError:
                 print_error(f"MaxRetry Error for {url}")
                 continue
+            except requests.TooManyRedirects:
+            	print_error(f"Too many redirects for {url}")
+            	continue
         else:
             input(f'Press any key to open the next {nbr_pages} pages')
             open_urls(urls[nbr_pages:], args)
