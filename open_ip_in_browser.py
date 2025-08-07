@@ -53,7 +53,6 @@ def open_urls(urls, args):
     '''This function opens a list of url in your favorite browser'''
     if args.filter_status:
         filtered_status = args.filter_status.split(',')
-        print(filtered_status)
     else :
         filtered_status = []
     nbr_pages = args.simultaneous_pages
@@ -79,6 +78,8 @@ def open_urls(urls, args):
         if url_id < nbr_pages:
             try:
                 status = requests.get(url, timeout=int(args.timeout), headers=headers, proxies=proxies).status_code
+                if status in [301, 302]:
+                    print_info("Redirecting from {url} to ")
                 if str(status) not in filtered_status:
                     webbrowser.open(url, new=2)
             except requests.exceptions.InvalidURL:

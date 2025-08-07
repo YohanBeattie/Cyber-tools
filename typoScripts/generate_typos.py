@@ -1,7 +1,7 @@
 #!/bin/python3
 '''
 Script générant des aléas sur la liste d'entrée
-@authors ?
+@authors dnstwist + YBE
 '''
 
 from tld import get_tld

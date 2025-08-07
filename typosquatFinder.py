@@ -128,7 +128,7 @@ def thread_work(my_function, domains_file, thread_number):
         lines = f.readlines()
         for _ in range(0, thread_number):
             t = Thread(target=my_function)
-            #t.daemon = True
+            t.daemon = True
             t.start()
         for line in lines:
             bucket_q.put(line.rstrip())
@@ -192,10 +192,11 @@ def check_website(domain):
     try:
         r = requests.get(domain, timeout=10)
         if set(domain).isdisjoint('асԁеһіјҟӏмпорԛгѕџԝху'):
-            is_cyrillic = '' 
+            is_cyrillic = ''
         else:
             is_cyrillic = '-> ⚠️ This domain name contains cyrillic characters'
-        utils.print_success(f"A similar website was found : {domain} (status:{r.status_code}) {is_cyrillic}")
+        utils.print_success(f"A similar website was found : \
+                {domain} (status:{r.status_code}) {is_cyrillic}")
     except requests.exceptions.ConnectionError:
         if VERBOSE:
             utils.print_warning(f"ConnectionError (probably du to inexistant domain) on : {domain}")
@@ -208,7 +209,8 @@ def check_websites(domainsfile, thread_number):
     urls_path = "tmp/website_typosquat.txt"
     with open(domainsfile, 'r', encoding='utf-8') as domains:
         with open(urls_path, "w", encoding="utf-8") as f:
-            for domain in domains.readlines():
+            domains = domains.readlines()
+            for domain in domains[:-1]:
                 f.write('http://'+domain.strip()+'\n')
     thread_work(check_website_worker, urls_path, thread_number=thread_number)
 
@@ -222,7 +224,6 @@ def search_blackhat_warfare(keywords): # ?
 
 def main():
     '''Unifing all the search engines'''
-    #Generating typos
     global VERBOSE
     signal(SIGINT, utils.signal_handler)
     args = parse()
@@ -236,9 +237,9 @@ def main():
     wordlist_path = built_typo_domains(keywords=keywords)
     utils.print_info("Searching for website with similar names")
     check_websites(domainsfile=wordlist_path, thread_number=threads)
+    VERBOSE = True if args.verbose else False
     if VERBOSE:
         utils.print_info("Verbose option selected")
-    VERBOSE = True if args.verbose else False
     utils.print_info("Searching for Microsoft Tenants")
     search_microsoft_tenants(wordlist_path=wordlist_path)
     utils.print_info("Searching AWS buckets")
@@ -249,7 +250,6 @@ def main():
     utils.print_info('Searching for new domain using favicon')
     search_same_favicon(domains=keywords)
     utils.print_info('All new domains were append to the file favicon.domains')
-    exit(1)
     return 0
 
 if __name__=='__main__':

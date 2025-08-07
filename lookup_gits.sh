@@ -82,7 +82,7 @@ echo "There is $(wc -l endpoint.list) to open"
 python3 $source_path/open_ip_in_browser.py -f endpoint.list
 
 echo "Removing "$dir
-rm -rf $dir
+#rm -rf $dir
 
 
 
