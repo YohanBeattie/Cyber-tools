@@ -81,7 +81,7 @@ def open_urls(urls, args):
                 status = requests.get(url, timeout=int(args.timeout), headers=headers, proxies=proxies).status_code
                 if status in [301, 302]:
                     print_info("Redirecting from {url} to ")
-                if status not in filtered_status:
+                if str(status) not in filtered_status:
                     webbrowser.open(url, new=2)
             except requests.exceptions.InvalidURL:
                 continue
