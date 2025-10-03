@@ -6,7 +6,7 @@ Script générant des aléas sur la liste d'entrée
 
 from tld import get_tld
 from tld.exceptions import TldDomainNotFound
-from utils import print_info
+from utils import print_info, print_error, run_cmd
 
 def generate_typos(domain):
     ''' Generating typos with multiple alterations (this function was stolen from the internet)'''
@@ -70,14 +70,19 @@ def built_typo_domains(keywords):
     with open ('wordlists/tlds.txt', 'r', encoding='utf-8') as g:
         domains = []
         tlds = g.readlines()
-        with open(wordlist_path, 'w', encoding='utf-8') as f:
-            for keyword in keywords:
-                if '.' in keyword: #we remove the tlds to get keywords to mess up with
-                    tlds.append('.'+keyword.rsplit('.', maxsplit=1)[-1]+'\n')
-                    keyword = '.'.join(keyword.split('.')[:-1])
-                domains += generate_typos(keyword)
-            for tld in list(set(tlds)):
-                for domi in list(set(domains)):
-                    f.write(domi+tld)
-            f.writelines(keyword+'\n' for keyword in keywords)
+        try :
+            with open(wordlist_path, 'w', encoding='utf-8') as f:
+                for keyword in keywords:
+                    if '.' in keyword: #we remove the tlds to get keywords to mess up with
+                        tlds.append('.'+keyword.rsplit('.', maxsplit=1)[-1]+'\n')
+                        keyword = '.'.join(keyword.split('.')[:-1])
+                    domains += generate_typos(keyword)
+                for tld in list(set(tlds)):
+                    for domi in list(set(domains)):
+                        f.write(domi+tld)
+                f.writelines(keyword+'\n' for keyword in keywords)
+        except FileNotFoundError :
+            print_error('Expected error, please re-run')
+            run_cmd('mkdir tmp')
+            exit(0)
     return wordlist_path
